@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant User
+    participant App
+    participant WebView2
+    participant Mermaid.js
+    
+    User->>App: Type diagram code
+    App->>App: Debounce (500ms)
+    App->>WebView2: ExecuteScriptAsync
+    WebView2->>Mermaid.js: renderPreview(code, options)
+    Mermaid.js->>Mermaid.js: Parse & render SVG
+    Mermaid.js-->>WebView2: Success/Error
+    WebView2-->>App: Result
+    App->>User: Update preview + status
+    
+    User->>App: Click "Export PNG"
+    App->>WebView2: ExecuteScriptAsync
+    WebView2->>Mermaid.js: renderToPngBase64(code, options)
+    Mermaid.js->>Mermaid.js: SVG → Canvas → PNG
+    Mermaid.js-->>WebView2: Base64 data URL
+    WebView2-->>App: PNG bytes
+    App->>User: Save file dialog
+    App->>User: Write PNG to disk

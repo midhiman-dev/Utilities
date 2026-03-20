@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid Renderer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            overflow: auto;
+        }
+        #wrap {
+            display: inline-block;
+        }
+        #canvas {
+            display: none;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            border: 1px solid red;
+            background-color: #ffe0e0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="wrap"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // Embedded Mermaid.js
+        {{MERMAID_JS}}
+    </script>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'strict',
+            theme: 'default'
+        });
+
+        let currentTheme = 'default';
+
+        // Render preview in the div
+        window.renderPreview = async function(code, options) {
+            try {
+                // Update theme if changed
+                if (options.theme !== currentTheme) {
+                    currentTheme = options.theme;
+                    mermaid.initialize({
+                        startOnLoad: false,
+                        securityLevel: 'strict',
+                        theme: options.theme
+                    });
+                }
+
+                // Clear previous content
+                const wrap = document.getElementById('wrap');
+                wrap.innerHTML = '';
+
+                // Generate unique ID
+                const id = 'mermaid-' + Date.now();
+                wrap.innerHTML = `<div id="${id}"></div>`;
+
+                // Render
+                const { svg } = await mermaid.render(id, code);
+                
+                // Check if the SVG contains Mermaid error output (it renders errors as SVG instead of throwing)
+                // Mermaid errors have a specific pattern with version info and error text
+                if (svg.includes('Syntax error in text') || 
+                    (svg.includes('mermaid version') && (svg.includes('Parse error') || svg.includes('Syntax error')))) {
+                    // Extract the error message from the SVG text nodes
+                    const parser = new DOMParser();
+                    const svgDoc = parser.parseFromString(svg, 'image/svg+xml');
+                    const textNodes = Array.from(svgDoc.querySelectorAll('text'));
+                    const errorLines = textNodes.map(t => t.textContent).filter(t => t && !t.includes('mermaid version'));
+                    const errorText = errorLines.join('\n').trim() || 'Syntax error in diagram';
+                    throw new Error(errorText);
+                }
+                
+                wrap.innerHTML = svg;
+
+                return { success: true };
+            } catch (error) {
+                console.error('Render error:', error);
+                // Display error gracefully in the preview panel
+                const wrap = document.getElementById('wrap');
+                wrap.innerHTML = `
+                    <div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                        <div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin: 10px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <svg style="width: 24px; height: 24px; margin-right: 10px; fill: #856404;" viewBox="0 0 24 24">
+                                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                                </svg>
+                                <h3 style="margin: 0; color: #856404; font-size: 18px; font-weight: 600;">Mermaid Syntax Error</h3>
+                            </div>
+                            <div style="background-color: #fff; border-radius: 4px; padding: 15px; border-left: 4px solid #ffc107;">
+                                <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #721c24;">${error.message || error}</pre>
+                            </div>
+                            <div style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                                <p style="margin: 0 0 8px 0; font-size: 13px; color: #495057; font-weight: 500;">💡 Common fixes:</p>
+                                <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #6c757d;">
+                                    <li>Check for missing or extra arrows (-->, --->, etc.)</li>
+                                    <li>Ensure all node names are properly defined</li>
+                                    <li>Verify bracket matching for node labels [text] or (text)</li>
+                                    <li>Check the <a href="https://mermaid.js.org/intro/" target="_blank" style="color: #007bff;">Mermaid documentation</a> for syntax</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                throw error;
+            }
+        };
+
+        // Render to PNG and return base64 data URL
+        window.renderToPngBase64 = async function(code, options) {
+            try {
+                // Update theme if changed
+                if (options.theme !== currentTheme) {
+                    currentTheme = options.theme;
+                    mermaid.initialize({
+                        startOnLoad: false,
+                        securityLevel: 'strict',
+                        theme: options.theme
+                    });
+                }
+
+                // Clear and render to hidden div
+                const wrap = document.getElementById('wrap');
+                wrap.innerHTML = '';
+
+                const id = 'mermaid-export-' + Date.now();
+                wrap.innerHTML = `<div id="${id}"></div>`;
+
+                const { svg } = await mermaid.render(id, code);
+                
+                // Check if the SVG contains Mermaid error output (it renders errors as SVG instead of throwing)
+                // Mermaid errors have a specific pattern with version info and error text
+                if (svg.includes('Syntax error in text') || 
+                    (svg.includes('mermaid version') && (svg.includes('Parse error') || svg.includes('Syntax error')))) {
+                    // Extract the error message from the SVG text nodes
+                    const parser = new DOMParser();
+                    const svgDoc = parser.parseFromString(svg, 'image/svg+xml');
+                    const textNodes = Array.from(svgDoc.querySelectorAll('text'));
+                    const errorLines = textNodes.map(t => t.textContent).filter(t => t && !t.includes('mermaid version'));
+                    const errorText = errorLines.join('\n').trim() || 'Syntax error in diagram';
+                    throw new Error(errorText);
+                }
+                
+                wrap.innerHTML = svg;
+
+                // Get SVG element
+                const svgElement = wrap.querySelector('svg');
+                if (!svgElement) {
+                    throw new Error('No SVG generated');
+                }
+
+                // Get dimensions
+                const bbox = svgElement.getBBox();
+                let width = bbox.width || svgElement.width.baseVal.value;
+                let height = bbox.height || svgElement.height.baseVal.value;
+
+                // Apply scale
+                const scale = options.scale || 1;
+                const scaledWidth = Math.ceil(width * scale);
+                const scaledHeight = Math.ceil(height * scale);
+
+                // Check max dimensions
+                const maxWidth = options.maxWidth || 20000;
+                const maxHeight = options.maxHeight || 20000;
+
+                if (scaledWidth > maxWidth || scaledHeight > maxHeight) {
+                    throw new Error(`Diagram too large: ${scaledWidth}x${scaledHeight}px exceeds maximum ${maxWidth}x${maxHeight}px`);
+                }
+
+                // Create canvas
+                const canvas = document.getElementById('canvas');
+                canvas.width = scaledWidth;
+                canvas.height = scaledHeight;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    throw new Error('Failed to get canvas context');
+                }
+
+                // Draw background if specified
+                if (options.backgroundColor) {
+                    ctx.fillStyle = options.backgroundColor;
+                    ctx.fillRect(0, 0, scaledWidth, scaledHeight);
+                }
+
+                // Convert SVG to image using base64 data URL to avoid CORS tainting
+                const svgString = new XMLSerializer().serializeToString(svgElement);
+                // Base64 encode to create data URL (avoids CORS issues)
+                const svgBase64 = btoa(unescape(encodeURIComponent(svgString)));
+                const dataUrl = 'data:image/svg+xml;base64,' + svgBase64;
+
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = function() {
+                        try {
+                            // Apply scale transform BEFORE drawing
+                            ctx.scale(scale, scale);
+                            ctx.drawImage(img, 0, 0);
+
+                            // Convert canvas to PNG data URL
+                            const pngDataUrl = canvas.toDataURL('image/png');
+                            console.log('PNG export successful, data URL length:', pngDataUrl.length);
+                            resolve(pngDataUrl);
+                        } catch (error) {
+                            console.error('Error during canvas drawing:', error);
+                            reject(error);
+                        }
+                    };
+                    img.onerror = function(error) {
+                        console.error('Failed to load SVG as image:', error);
+                        reject(new Error('Failed to load SVG image: ' + (error.message || error)));
+                    };
+                    img.src = dataUrl;
+                });
+            } catch (error) {
+                console.error('PNG render error:', error);
+                throw error;
+            }
+        };
+    </script>
+</body>
+</html>

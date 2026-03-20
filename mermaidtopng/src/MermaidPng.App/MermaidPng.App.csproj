@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MermaidPng</AssemblyName>
+    <Product>Mermaid to PNG Converter</Product>
+    <Description>Offline Mermaid diagram to PNG converter</Description>
+    <Version>1.0.0</Version>
+    <Copyright>Copyright © 2026</Copyright>
+  </PropertyGroup>
+
+  <!-- Single-file publish configuration (only for publish, not for run/build) -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Web\host.html" />
+    <EmbeddedResource Include="Web\mermaid.min.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\**" />
+  </ItemGroup>
+
+</Project>
