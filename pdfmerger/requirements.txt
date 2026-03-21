@@ -1,0 +1,5 @@
+pikepdf
+PyMuPDF
+pandas
+openpyxl
+python-docx

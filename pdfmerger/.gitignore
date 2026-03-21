@@ -1,0 +1,39 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and packaging outputs
+build/
+dist/
+out/
+*.spec.tmp
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# IDE and editor settings
+.vscode/
+.idea/
+
+# OS-specific files
+Thumbs.db
+Desktop.ini
+
+# Logs and diagnostics
+*.log
+
+# PyInstaller internals
+*.manifest
+*.pkg
