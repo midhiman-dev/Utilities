@@ -4,6 +4,13 @@ This repo now has two scripts:
 - `merge_optimize_pdfs.py`: Merge per-folder PDFs and lightly optimize with pikepdf.
 - `compress_max_pdfs.py`: Compress individual PDFs with lossless and aggressive (lossy) modes.
 
+## Release
+
+- GitHub release: [`PDF Tools GUI v1.0.0`](https://github.com/midhiman-dev/Utilities/releases/tag/pdftools-v1.0.0)
+- Download binary: [`pdf_tools_gui.exe`](https://github.com/midhiman-dev/Utilities/releases/download/pdftools-v1.0.0/pdf_tools_gui.exe)
+
+If you only want to use the Windows app, download the binary from the release above. Local source setup is only needed if you want to run from Python or build the executable yourself.
+
 ## GUI (MVP)
 - A Windows desktop GUI wrapper implementation is under `src/pdf_gui/`.
 - Launch it with:
@@ -41,6 +48,7 @@ Notes:
 
 Output:
 - Single-file app: `out/dist/pdf_tools_gui.exe`
+- Published binary is also available from `Releases/pdftools-v1.0.0`
 
 Notes:
 - Build script installs/updates packaging dependencies (`pyinstaller`) and project requirements from `requirements.txt`.
