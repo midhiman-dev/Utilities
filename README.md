@@ -11,6 +11,8 @@ Location: [`mermaidtopng`](./mermaidtopng/)
 A lightweight Windows desktop utility for converting Mermaid diagrams into image files with live preview and export options.
 
 Documentation: [`mermaidtopng/README.md`](./mermaidtopng/README.md)
+Release: [`v1.0.0`](https://github.com/midhiman-dev/Utilities/releases/tag/v1.0.0)
+Download: [`MermaidPng.exe`](https://github.com/midhiman-dev/Utilities/releases/download/v1.0.0/MermaidPng.exe)
 
 ## Structure
 

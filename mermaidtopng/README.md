@@ -2,6 +2,13 @@
 
 A lightweight, offline Windows WPF application for converting Mermaid diagrams to PNG images.
 
+## Release
+
+The first public release is available at GitHub Releases:
+
+- Release page: [`v1.0.0`](https://github.com/midhiman-dev/Utilities/releases/tag/v1.0.0)
+- Download EXE: [`MermaidPng.exe`](https://github.com/midhiman-dev/Utilities/releases/download/v1.0.0/MermaidPng.exe)
+
 ## Features
 
 ✅ **Offline Operation** - No network required; Mermaid.js is fully embedded  
