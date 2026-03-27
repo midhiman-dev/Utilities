@@ -1,0 +1,8 @@
+# Generated conversion output
+Inventory/
+*.csv
+
+# Local Python environment
+.venv/
+__pycache__/
+*.pyc

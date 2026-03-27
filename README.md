@@ -24,9 +24,30 @@ Documentation: [`pdfmerger/README.md`](./pdfmerger/README.md)
 Release: [`pdftools-v1.0.0`](https://github.com/midhiman-dev/Utilities/releases/tag/pdftools-v1.0.0)
 Download: [`pdf_tools_gui.exe`](https://github.com/midhiman-dev/Utilities/releases/download/pdftools-v1.0.0/pdf_tools_gui.exe)
 
+### Excel Workbook to CSV Converter
+
+Location: [`XL2CSV`](./XL2CSV/)
+
+A Python utility with both CLI and terminal UI modes that reads an Excel workbook and exports every worksheet to its own CSV file in an output folder named after the workbook. It supports `.xlsx`, `.xlsm`, `.xltx`, and `.xltm`, preserves values as strings, writes UTF-8 with BOM for Excel compatibility, sanitises invalid filename characters, and avoids overwriting when sheet names collide.
+
+Documentation: [`XL2CSV/README.md`](./XL2CSV/README.md)
+
+Quick usage:
+
+```bash
+python XL2CSV/xlsx_to_csv.py <file.xlsx>
+```
+
+Requirements:
+
+```bash
+pip install pandas openpyxl
+```
+
 ## Structure
 
 - `mermaidtopng` - Mermaid diagram image converter
 - `pdfmerger` - PDF Tools GUI and related CLI utilities
+- `XL2CSV` - Excel workbook to per-sheet CSV converter
 
 More utilities can be added here over time, with each one documented in its own folder.
