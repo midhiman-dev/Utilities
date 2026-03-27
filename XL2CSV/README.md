@@ -25,6 +25,12 @@ A cross-platform utility that converts every worksheet in an Excel workbook into
 pip install pandas openpyxl
 ```
 
+For executable builds on Windows:
+
+```bash
+pip install pyinstaller pandas openpyxl
+```
+
 ## Usage
 
 Direct conversion:
@@ -50,6 +56,39 @@ Help:
 ```bash
 python xlsx_to_csv.py --help
 ```
+
+## Build Executable
+
+To generate a Windows executable that runs on machines without Python installed, build it with PyInstaller on a Windows machine.
+
+From the `XL2CSV` directory:
+
+```powershell
+.\build.ps1
+```
+
+The script will:
+
+- create a local virtual environment if needed
+- install or upgrade `pip`
+- install `pyinstaller`, `pandas`, and `openpyxl`
+- build a standalone console executable
+
+After a successful build, the executable will be available at:
+
+```text
+dist\xl2csv.exe
+```
+
+You can test it with:
+
+```powershell
+.\dist\xl2csv.exe --help
+.\dist\xl2csv.exe --tui
+.\dist\xl2csv.exe .\Inventory.xlsx
+```
+
+If you want a clean rebuild, delete `build/`, `dist/`, and any generated `.spec` file first, or rerun the script after removing them.
 
 ## TUI Flow
 
@@ -93,6 +132,8 @@ The tool reports clear errors for:
 
 ```text
 XL2CSV/
+|- .gitignore
+|- build.ps1
 |- xlsx_to_csv.py
 `- README.md
 ```
