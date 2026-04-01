@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# App runtime artifacts
+.web_downloads/
+app/__pycache__/
+*.log
+
+# Google OAuth secrets/tokens (DO NOT COMMIT)
+credentials.json
+token.json
+client_secret_*.json
+
+# Local env files
+.env
+.env.*

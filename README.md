@@ -44,10 +44,19 @@ Requirements:
 pip install pandas openpyxl
 ```
 
+### Study Materials Downloader
+
+Location: [`downloadstudymaterial`](./downloadstudymaterial/)
+
+A Google Drive utility with both web and CLI interfaces for browsing Drive folders, previewing supported files, searching by filename across Drive, downloading single files, and packaging full folders or selected items into ZIP archives using the read-only Google Drive API.
+
+Documentation: [`downloadstudymaterial/README.md`](./downloadstudymaterial/README.md)
+
 ## Structure
 
 - `mermaidtopng` - Mermaid diagram image converter
 - `pdfmerger` - PDF Tools GUI and related CLI utilities
 - `XL2CSV` - Excel workbook to per-sheet CSV converter
+- `downloadstudymaterial` - Google Drive study materials browser and ZIP downloader
 
 More utilities can be added here over time, with each one documented in its own folder.

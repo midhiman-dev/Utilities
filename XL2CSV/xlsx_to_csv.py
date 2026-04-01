@@ -6,7 +6,7 @@ Usage:
     python xlsx_to_csv.py <file.xlsx>
     python xlsx_to_csv.py --tui
     python xlsx_to_csv.py
-
+`
 Output:
     A folder named after the input file (for example, Inventory/ for
     Inventory.xlsx) containing one UTF-8 CSV per worksheet.

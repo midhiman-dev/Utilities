@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search - Study Materials Downloader</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Search Files</h1>
+      <div class="actions">
+        {% if default_root_id %}
+          <a href="/browse?folder_id={{ default_root_id }}" class="btn">← Back to Browse</a>
+        {% else %}
+          <a href="/" class="btn">← Back to Home</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <section class="search-section">
+      <div class="search-bar">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search files by name..." value="{{ q }}" autocomplete="off">
+        <button class="clear-btn" id="clear-btn" title="Clear search">×</button>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="tab active" data-filter="all">All</button>
+        <button class="tab" data-filter="file">Files only</button>
+        <button class="tab" data-filter="folder">Folders only</button>
+      </div>
+    </section>
+
+    <section class="selection-bar hidden" id="selection-bar">
+      <span class="muted">Selected: <span id="selected-count">0</span> items</span>
+      <div class="actions">
+        <button id="download-search-btn" class="btn primary" disabled>Download selected as ZIP</button>
+      </div>
+    </section>
+
+    <section id="results-container">
+      <div id="empty-state" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="28" cy="28" r="16" stroke="#9ca3af" stroke-width="3"/>
+          <path d="M40 40L52 52" stroke="#9ca3af" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <p class="muted">Start typing to search your Drive...</p>
+      </div>
+
+      <div id="loading-skeleton" class="hidden">
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
+
+      <div id="no-results" class="empty-state hidden">
+        <p class="muted">No files found for '<span id="search-term"></span>'</p>
+      </div>
+
+      <div id="results-list"></div>
+
+      <div class="load-more-container">
+        <button id="load-more-btn" class="btn hidden">Load more results</button>
+      </div>
+    </section>
+
+    <div id="status" class="status hidden">
+      <p id="status-text"></p>
+      <p id="progress" class="muted"></p>
+    </div>
+  </main>
+
+  <!-- Preview Modal -->
+  <div id="preview-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="preview-filename">Preview</h2>
+        <button class="modal-close" onclick="closePreview()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="preview-container"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closePreview()">Close</button>
+        <a id="preview-drive-link" class="btn" target="_blank" style="display:none;">Open in Google Drive</a>
+      </div>
+    </div>
+  </div>
+  <div id="preview-overlay" class="modal-overlay hidden" onclick="closePreview()"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsWorker = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
+  <script src="/static/app.js?v=preview-fix-3"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Browse - Study Materials Downloader</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="breadcrumbs">
+        {% for crumb in breadcrumbs %}
+          <span class="crumb">{{ crumb }}</span>
+          {% if not loop.last %}<span class="crumb-sep">›</span>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="actions">
+        <a href="/search" class="btn" title="Search files">🔍 Search</a>
+        <button class="btn" onclick="history.back()">Back</button>
+        <button id="download-btn" class="btn primary" data-folder-id="{{ folder_id }}" data-folder-name="{{ folder_name }}">Download this folder as ZIP</button>
+      </div>
+    </header>
+
+    <section class="selection-bar">
+      <label><input type="checkbox" id="select-all"> Select all in this view</label>
+      <span class="muted">Selected: <span id="selected-count">0</span> items</span>
+      <div class="actions">
+        <button id="download-selected-btn" class="btn primary" data-folder-id="{{ folder_id }}" data-folder-name="{{ folder_name }}" disabled>Download selected as ZIP</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Folders</h2>
+      <div class="cards">
+        {% for item in children if item.is_folder %}
+          {% set next_path = path + '|' + item.name if path else item.name %}
+          <div class="card folder">
+            <label class="checkbox-row">
+              <input type="checkbox" class="item-checkbox" data-id="{{ item.id }}" data-type="folder" data-name="{{ item.name }}">
+              <span>Select</span>
+            </label>
+            <a class="folder-link" href="/browse?folder_id={{ item.id }}&path={{ next_path | urlencode }}">
+              <div class="icon">📁</div>
+              <div class="name">{{ item.name }}</div>
+            </a>
+          </div>
+        {% else %}
+          <p class="muted">No subfolders here.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section>
+      <h2>Files</h2>
+      <ul class="file-list">
+        {% for item in children if not item.is_folder %}
+          <li class="file-row">
+            <label class="checkbox-row">
+              <input type="checkbox" class="item-checkbox" data-id="{{ item.id }}" data-type="file" data-name="{{ item.name }}">
+              <span>{{ item.name }}</span>
+            </label>
+            <div class="file-actions">
+              <button class="btn btn-small preview-btn" data-id="{{ item.id }}" data-name="{{ item.name }}" data-mime="{{ item.mime_type }}" title="Preview file">👁 Preview</button>
+            </div>
+          </li>
+        {% else %}
+          <li class="muted">No files in this folder.</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section id="status" class="status hidden">
+      <div id="status-text">Preparing download...</div>
+      <div id="progress"></div>
+    </section>
+  </main>
+
+  <!-- Preview Modal -->
+  <div id="preview-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="preview-filename">Preview</h2>
+        <button class="modal-close" onclick="closePreview()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="preview-container"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closePreview()">Close</button>
+        <a id="preview-drive-link" class="btn" target="_blank" style="display:none;">Open in Google Drive</a>
+      </div>
+    </div>
+  </div>
+  <div id="preview-overlay" class="modal-overlay hidden" onclick="closePreview()"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsWorker = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
+  <script src="/static/app.js?v=preview-fix-3"></script>
+</body>
+</html>

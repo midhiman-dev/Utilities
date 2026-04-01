@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Study Materials Downloader</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Study Materials Downloader</h1>
+    <p class="lead">Paste a Google Drive folder or file link.</p>
+    {% if error %}
+      <div class="status">{{ error }}</div>
+    {% endif %}
+    <form action="/browse" method="get" class="card">
+      <label for="root_url">Drive folder/file URL or ID</label>
+      <input id="root_url" name="root_url" type="text" value="{{ default_root_url }}" placeholder="https://drive.google.com/drive/folders/... or https://docs.google.com/document/d/..." required>
+      <div class="actions">
+        <button type="submit" class="btn primary">Connect Folder</button>
+        <button type="submit" class="btn" formaction="/download-file">Download Single File</button>
+      </div>
+      <p class="muted">Google Docs files download as PDF.</p>
+    </form>
+  </main>
+</body>
+</html>

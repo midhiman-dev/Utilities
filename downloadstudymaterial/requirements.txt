@@ -1,0 +1,11 @@
+google-api-python-client>=2.131.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0
+questionary>=2.0.0
+rich>=13.7.0
+tqdm>=4.66.0
+fastapi>=0.115.0
+uvicorn>=0.30.0
+jinja2>=3.1.0
+aiofiles>=23.2.0
+python-multipart>=0.0.9
