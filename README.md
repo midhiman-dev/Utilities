@@ -52,11 +52,23 @@ A Google Drive utility with both web and CLI interfaces for browsing Drive folde
 
 Documentation: [`downloadstudymaterial/README.md`](./downloadstudymaterial/README.md)
 
+### HTML-based Utilities
+
+Location: [`HTMLbased-utilites`](./HTMLbased-utilites/)
+
+Small standalone browser utilities that run directly from local HTML files.
+
+Files:
+
+- [`md-viewer.html`](./HTMLbased-utilites/md-viewer.html) - Markdown file viewer with rendered preview and table of contents
+- [`mermaid-viewer.html`](./HTMLbased-utilites/mermaid-viewer.html) - Mermaid diagram editor with live preview and PNG export
+
 ## Structure
 
 - `mermaidtopng` - Mermaid diagram image converter
 - `pdfmerger` - PDF Tools GUI and related CLI utilities
 - `XL2CSV` - Excel workbook to per-sheet CSV converter
 - `downloadstudymaterial` - Google Drive study materials browser and ZIP downloader
+- `HTMLbased-utilites` - Standalone HTML browser utilities
 
 More utilities can be added here over time, with each one documented in its own folder.

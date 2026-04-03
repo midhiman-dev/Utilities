@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mermaid Diagram Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2128;
+    --border: #2a2d36;
+    --border2: #363a47;
+    --accent: #e8c547;
+    --accent2: #f0d87a;
+    --text: #e2e4eb;
+    --text-dim: #7b808f;
+    --text-dimmer: #454a58;
+    --green: #4ade80;
+    --red: #f87171;
+    --radius: 10px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow: hidden;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0e0f11;
+  }
+
+  .logo-text {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0f11;
+    font-weight: 600;
+  }
+  .btn-primary:hover {
+    background: var(--accent2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(232,197,71,0.25);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Layout */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: calc(100vh - 57px);
+  }
+
+  /* Editor pane */
+  .editor-pane {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .pane-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    transition: all 0.3s;
+  }
+  .status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  .editor-wrap {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  textarea#code {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    padding: 20px;
+    tab-size: 2;
+    caret-color: var(--accent);
+  }
+
+  textarea#code::selection { background: rgba(232,197,71,0.18); }
+
+  .line-numbers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    padding: 20px 0;
+    pointer-events: none;
+    user-select: none;
+    color: var(--text-dimmer);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: right;
+    padding-right: 8px;
+  }
+
+  textarea#code { padding-left: 52px; }
+
+  /* Error bar */
+  .error-bar {
+    padding: 8px 16px;
+    background: rgba(248,113,113,0.08);
+    border-top: 1px solid rgba(248,113,113,0.2);
+    color: var(--red);
+    font-size: 11px;
+    display: none;
+    gap: 6px;
+    align-items: flex-start;
+    flex-shrink: 0;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+  .error-bar.show { display: flex; }
+
+  /* Templates */
+  .templates-bar {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .tpl-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dimmer);
+    margin-right: 2px;
+  }
+
+  .tpl-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+  }
+  .tpl-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,197,71,0.06);
+  }
+
+  /* Preview pane */
+  .preview-pane {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .preview-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .zoom-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .zoom-btn:hover { color: var(--text); border-color: var(--border2); }
+
+  .zoom-level {
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .preview-canvas {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+  }
+
+  /* Dot grid background */
+  .preview-canvas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  #diagram-output {
+    position: relative;
+    transform-origin: center center;
+    transition: transform 0.2s ease;
+    max-width: 100%;
+  }
+
+  #diagram-output svg {
+    border-radius: var(--radius);
+    background: var(--surface) !important;
+    padding: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-dimmer);
+    text-align: center;
+  }
+
+  .empty-state .icon {
+    font-size: 48px;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 12px;
+    max-width: 200px;
+    line-height: 1.7;
+  }
+
+  /* Export toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast .t-icon { color: var(--green); }
+
+  /* Loading spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(14,15,17,0.3);
+    border-top-color: #0e0f11;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dimmer); }
+
+  @media (max-width: 700px) {
+    .workspace { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    .editor-pane { border-right: none; border-bottom: 1px solid var(--border); }
+    html, body { overflow: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">M</div>
+    <span class="logo-text">Mermaid<span>View</span></span>
+  </div>
+  <div class="header-actions">
+    <span class="badge">v10.6</span>
+    <button class="btn btn-ghost" onclick="copyCode()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Copy
+    </button>
+    <button class="btn btn-primary" id="export-btn" onclick="exportPNG()">
+      <div class="spinner" id="spinner"></div>
+      <svg id="dl-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export PNG
+    </button>
+  </div>
+</header>
+
+<div class="workspace">
+  <!-- Editor -->
+  <div class="editor-pane">
+    <div class="pane-header">
+      <span class="pane-label">Source</span>
+      <div class="status-dot" id="status-dot"></div>
+    </div>
+    <div class="editor-wrap">
+      <div class="line-numbers" id="line-numbers"></div>
+      <textarea id="code" spellcheck="false" autocomplete="off"></textarea>
+    </div>
+    <div class="error-bar" id="error-bar">
+      <span>⚠</span>
+      <span id="error-msg"></span>
+    </div>
+    <div class="templates-bar">
+      <span class="tpl-label">Templates</span>
+      <button class="tpl-btn" onclick="loadTemplate('flowchart')">Flowchart</button>
+      <button class="tpl-btn" onclick="loadTemplate('sequence')">Sequence</button>
+      <button class="tpl-btn" onclick="loadTemplate('er')">ER</button>
+      <button class="tpl-btn" onclick="loadTemplate('gantt')">Gantt</button>
+      <button class="tpl-btn" onclick="loadTemplate('class')">Class</button>
+      <button class="tpl-btn" onclick="loadTemplate('pie')">Pie</button>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-pane">
+    <div class="preview-header">
+      <span class="pane-label">Preview</span>
+      <div class="preview-controls">
+        <button class="zoom-btn" onclick="zoom(-0.1)" title="Zoom out">−</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button class="zoom-btn" onclick="zoom(0.1)" title="Zoom in">+</button>
+        <button class="zoom-btn" onclick="resetZoom()" title="Reset zoom" style="font-size:10px;width:auto;padding:0 7px;">Reset</button>
+      </div>
+    </div>
+    <div class="preview-canvas" id="preview-canvas">
+      <div id="diagram-output">
+        <div class="empty-state">
+          <div class="icon">⬡</div>
+          <p>Start typing a Mermaid diagram to see a live preview</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="t-icon">✓</span>
+  <span id="toast-msg">Copied to clipboard</span>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      background: '#16181c',
+      mainBkg: '#1e2128',
+      nodeBorder: '#363a47',
+      lineColor: '#7b808f',
+      textColor: '#e2e4eb',
+      fontSize: '14px',
+      primaryColor: '#1e2128',
+      primaryBorderColor: '#e8c547',
+      primaryTextColor: '#e2e4eb',
+      secondaryColor: '#16181c',
+      tertiaryColor: '#2a2d36',
+    },
+    flowchart: { curve: 'basis', htmlLabels: true },
+    securityLevel: 'loose',
+  });
+
+  const TEMPLATES = {
+    flowchart: `flowchart TD
+    A([Start]) --> B{Is it working?}
+    B -- Yes --> C[✓ Ship it!]
+    B -- No --> D[Debug]
+    D --> E[Search Stack Overflow]
+    E --> F{Found answer?}
+    F -- Yes --> B
+    F -- No --> G[Ask ChatGPT]
+    G --> B
+    C --> H([End])`,
+
+    sequence: `sequenceDiagram
+    autonumber
+    actor User
+    participant App
+    participant API
+    participant DB
+
+    User->>App: Login request
+    App->>API: POST /auth/login
+    API->>DB: SELECT user WHERE email=?
+    DB-->>API: User record
+    API-->>App: JWT token
+    App-->>User: Welcome back!
+
+    User->>App: Fetch dashboard
+    App->>API: GET /dashboard
+    API->>DB: Query analytics
+    DB-->>API: Data rows
+    API-->>App: JSON response
+    App-->>User: Render UI`,
+
+    er: `erDiagram
+    USER {
+        int id PK
+        string email
+        string name
+        datetime created_at
+    }
+    POST {
+        int id PK
+        string title
+        text body
+        int author_id FK
+        datetime published_at
+    }
+    COMMENT {
+        int id PK
+        text content
+        int post_id FK
+        int user_id FK
+    }
+    TAG {
+        int id PK
+        string name
+    }
+    POST_TAG {
+        int post_id FK
+        int tag_id FK
+    }
+
+    USER ||--o{ POST : "writes"
+    USER ||--o{ COMMENT : "leaves"
+    POST ||--o{ COMMENT : "receives"
+    POST }o--o{ TAG : "has"`,
+
+    gantt: `gantt
+    title Product Launch Roadmap
+    dateFormat  YYYY-MM-DD
+    section Research
+    User interviews       :done,    r1, 2024-01-01, 14d
+    Competitive analysis  :done,    r2, after r1, 7d
+    section Design
+    Wireframes            :active,  d1, 2024-01-22, 10d
+    Visual design         :         d2, after d1, 12d
+    section Engineering
+    Backend API           :         e1, 2024-01-29, 20d
+    Frontend              :         e2, after d2, 15d
+    section Launch
+    Beta testing          :         l1, after e1, 10d
+    Public launch         :         l2, after l1, 3d`,
+
+    class: `classDiagram
+    class Animal {
+        +String name
+        +int age
+        +makeSound() String
+        +move() void
+    }
+    class Dog {
+        +String breed
+        +fetch() void
+        +makeSound() String
+    }
+    class Cat {
+        +bool isIndoor
+        +purr() void
+        +makeSound() String
+    }
+    class Bird {
+        +float wingspan
+        +fly() void
+        +makeSound() String
+    }
+
+    Animal <|-- Dog
+    Animal <|-- Cat
+    Animal <|-- Bird
+
+    class PetOwner {
+        +String name
+        +List~Animal~ pets
+        +adopt(Animal a) void
+        +feed() void
+    }
+
+    PetOwner "1" --> "0..*" Animal : owns`,
+
+    pie: `pie title Browser Market Share 2024
+    "Chrome"    : 65.1
+    "Safari"    : 18.7
+    "Edge"      : 5.3
+    "Firefox"   : 2.9
+    "Samsung"   : 2.6
+    "Other"     : 5.4`,
+  };
+
+  let currentScale = 1;
+  let renderTimer;
+  let uid = 0;
+
+  const codeEl = document.getElementById('code');
+  const outputEl = document.getElementById('diagram-output');
+  const errorBar = document.getElementById('error-bar');
+  const errorMsg = document.getElementById('error-msg');
+  const statusDot = document.getElementById('status-dot');
+  const lineNums = document.getElementById('line-numbers');
+
+  // Load default template
+  codeEl.value = TEMPLATES.flowchart;
+  updateLineNumbers();
+  renderDiagram();
+
+  codeEl.addEventListener('input', () => {
+    updateLineNumbers();
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderDiagram, 400);
+  });
+
+  codeEl.addEventListener('scroll', () => {
+    lineNums.style.transform = `translateY(${-codeEl.scrollTop}px)`;
+  });
+
+  codeEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = codeEl.selectionStart, end = codeEl.selectionEnd;
+      codeEl.value = codeEl.value.substring(0, s) + '  ' + codeEl.value.substring(end);
+      codeEl.selectionStart = codeEl.selectionEnd = s + 2;
+      updateLineNumbers();
+    }
+  });
+
+  function updateLineNumbers() {
+    const lines = codeEl.value.split('\n').length;
+    lineNums.innerHTML = Array.from({length: lines}, (_, i) => `<div>${i + 1}</div>`).join('');
+  }
+
+  async function renderDiagram() {
+    const code = codeEl.value.trim();
+    if (!code) {
+      outputEl.innerHTML = `<div class="empty-state"><div class="icon">⬡</div><p>Start typing a Mermaid diagram to see a live preview</p></div>`;
+      setStatus('ok');
+      return;
+    }
+
+    try {
+      const id = `mermaid-${++uid}`;
+      const { svg } = await mermaid.render(id, code);
+      outputEl.innerHTML = svg;
+      outputEl.querySelector('svg').style.maxWidth = '100%';
+      setStatus('ok');
+      hideError();
+      document.getElementById('export-btn').disabled = false;
+    } catch (err) {
+      setStatus('error');
+      showError(err.message || 'Invalid Mermaid syntax');
+      document.getElementById('export-btn').disabled = true;
+    }
+  }
+
+  function setStatus(state) {
+    statusDot.className = state === 'error' ? 'status-dot error' : 'status-dot';
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg.replace(/Parse error.*?\n/s, '').trim().substring(0, 200);
+    errorBar.classList.add('show');
+  }
+
+  function hideError() {
+    errorBar.classList.remove('show');
+  }
+
+  function loadTemplate(name) {
+    codeEl.value = TEMPLATES[name] || '';
+    updateLineNumbers();
+    clearTimeout(renderTimer);
+    renderDiagram();
+  }
+
+  // Zoom
+  function zoom(delta) {
+    currentScale = Math.max(0.2, Math.min(3, currentScale + delta));
+    applyZoom();
+  }
+
+  function resetZoom() {
+    currentScale = 1;
+    applyZoom();
+  }
+
+  function applyZoom() {
+    outputEl.style.transform = `scale(${currentScale})`;
+    document.getElementById('zoom-level').textContent = Math.round(currentScale * 100) + '%';
+  }
+
+  // Wheel zoom
+  document.getElementById('preview-canvas').addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      zoom(e.deltaY < 0 ? 0.1 : -0.1);
+    }
+  }, { passive: false });
+
+  // Copy
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(codeEl.value);
+      showToast('Code copied to clipboard');
+    } catch {
+      showToast('Could not copy to clipboard');
+    }
+  }
+
+  // Export PNG
+  async function exportPNG() {
+    const svg = outputEl.querySelector('svg');
+    if (!svg) return;
+
+    const btn = document.getElementById('export-btn');
+    const spinner = document.getElementById('spinner');
+    const dlIcon = document.getElementById('dl-icon');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    dlIcon.style.display = 'none';
+
+    try {
+      const scale = 2;
+
+      // Use getBBox for intrinsic size, fall back to bounding rect
+      let width, height;
+      try {
+        const bb = svg.getBBox();
+        width = Math.max(bb.width + 48, 400);  // +48 for the SVG padding
+        height = Math.max(bb.height + 48, 300);
+      } catch {
+        const rect = svg.getBoundingClientRect();
+        width = Math.max(rect.width, 400);
+        height = Math.max(rect.height, 300);
+      }
+
+      // Clone and sanitize the SVG
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('width', width);
+      clone.setAttribute('height', height);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+      // Inline the background fill so canvas renders correctly
+      clone.style.background = '#16181c';
+
+      // Embed a <style> block with fallback fonts so external font loads aren't needed
+      const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+      styleEl.textContent = `
+        * { font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace; }
+        .label, text, tspan { fill: #e2e4eb; }
+      `;
+      clone.insertBefore(styleEl, clone.firstChild);
+
+      // Serialize to base64 data URL (avoids blob CORS issues with canvas)
+      const svgStr = new XMLSerializer().serializeToString(clone);
+      const encoded = btoa(unescape(encodeURIComponent(svgStr)));
+      const dataUrl = `data:image/svg+xml;base64,${encoded}`;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#16181c';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve();
+        };
+        img.onerror = (e) => reject(new Error('Image failed to load: ' + e.type));
+        img.src = dataUrl;
+      });
+
+      // Download
+      canvas.toBlob((blob) => {
+        if (!blob) { showToast('Export failed — canvas is empty'); return; }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'diagram.png';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('PNG exported successfully');
+      }, 'image/png');
+
+    } catch (err) {
+      showToast('Export failed — ' + err.message);
+      console.error('PNG export error:', err);
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      dlIcon.style.display = 'block';
+    }
+  }
+
+  // Toast
+  let toastTimer;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>
