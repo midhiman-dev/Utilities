@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utilities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2efe8;
+    --ink: #1a1814;
+    --muted: #6d665a;
+    --line: #d7d0c4;
+    --card: rgba(255, 252, 245, 0.82);
+    --accent: #b6542d;
+    --accent-soft: #f3d7c7;
+    --shadow: 0 24px 60px rgba(49, 35, 20, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at top left, rgba(182, 84, 45, 0.14), transparent 32%),
+      radial-gradient(circle at bottom right, rgba(103, 125, 86, 0.16), transparent 28%),
+      linear-gradient(180deg, #f8f4ec 0%, var(--bg) 100%);
+  }
+
+  .shell {
+    width: min(1080px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 56px 0 72px;
+  }
+
+  .hero {
+    margin-bottom: 36px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  h1 {
+    margin: 0 0 14px;
+    font-size: clamp(2.6rem, 6vw, 5.5rem);
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+    max-width: 8ch;
+  }
+
+  .hero p {
+    margin: 0;
+    max-width: 620px;
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: var(--card);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 30px 70px rgba(49, 35, 20, 0.16);
+  }
+
+  .card-type {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .card h2 {
+    margin: 0;
+    font-size: 1.45rem;
+    line-height: 1.1;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .card-footer {
+    margin-top: auto;
+    padding-top: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink);
+  }
+
+  @media (max-width: 640px) {
+    .shell {
+      width: min(100% - 24px, 1080px);
+      padding: 32px 0 40px;
+    }
+
+    .card {
+      border-radius: 18px;
+      padding: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <span class="eyebrow">Static Utilities</span>
+      <h1>HTML Tool Collection</h1>
+      <p>
+        Small browser-based utilities hosted as static pages. Choose a tool below to open it directly in GitHub Pages.
+      </p>
+    </section>
+
+    <section class="grid" aria-label="Available HTML utilities">
+      <a class="card" href="HTMLbased-utilites/md-viewer.html">
+        <span class="card-type">Markdown</span>
+        <h2>MD Viewer</h2>
+        <p>Open a Markdown file, render it with a styled reading layout, copy the source, and export the rendered document to PDF.</p>
+        <span class="card-footer">Open utility -></span>
+      </a>
+
+      <a class="card" href="HTMLbased-utilites/mermaid-viewer.html">
+        <span class="card-type">Diagram</span>
+        <h2>Mermaid Viewer</h2>
+        <p>Load Mermaid definitions in the browser and preview diagrams without requiring any local install or build step.</p>
+        <span class="card-footer">Open utility -></span>
+      </a>
+    </section>
+  </main>
+</body>
+</html>
