@@ -58,6 +58,8 @@ Location: [`HTMLbased-utilites`](./HTMLbased-utilites/)
 
 Small standalone browser utilities that run directly from local HTML files.
 
+Hosted site: [mi-dhiman-utilities.netlify.app](https://mi-dhiman-utilities.netlify.app/)
+
 Files:
 
 - [`md-viewer.html`](./HTMLbased-utilites/md-viewer.html) - Markdown file viewer with rendered preview and table of contents
