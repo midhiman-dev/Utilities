@@ -1,3 +1,7 @@
 /build
-*.spec
+/*.spec
 /dist
+__pycache__/
+*.pyc
+WhatsAppPhoneMask/dist/
+WhatsAppPhoneMask/build/*/

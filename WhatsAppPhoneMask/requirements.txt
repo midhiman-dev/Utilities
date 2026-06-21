@@ -1,0 +1,4 @@
+# Core dependencies (stdlib only — no runtime deps beyond Python itself)
+# Dev/build dependencies:
+pytest>=7.0
+pyinstaller>=6.0
