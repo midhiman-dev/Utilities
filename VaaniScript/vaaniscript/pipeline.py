@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from .asr import AsrEngine, NoOpAsrEngine
 from .config import Settings
-from .contracts import PipelineStageResult, TranscriptionRequest, VoiceNoteResult
+from .contracts import PipelineStageResult, SegmentResult, TranscriptionRequest, VoiceNoteResult
 from .errors import DURATION_LIMIT_EXCEEDED, VaaniScriptError
 from .ingest import normalize_audio, probe_audio
 
@@ -44,8 +45,9 @@ class PlaceholderStage:
 
 
 class VaaniPipeline:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, *, asr_engine: AsrEngine | None = None) -> None:
         self.settings = settings
+        self.asr_engine = asr_engine or NoOpAsrEngine()
         self.ingest = IngestStage()
         self.audio = PlaceholderStage("audio")
         self.asr = PlaceholderStage("asr")
@@ -58,7 +60,35 @@ class VaaniPipeline:
             request=TranscriptionRequest(source=source, workspace_dir=self.settings.app.workspace_dir),
             settings=self.settings,
         )
-        return self.ingest.run(context)
+        ingest_result = self.ingest.run(context)
+        if ingest_result.status != "ready":
+            return ingest_result
+
+        normalized_wav = ingest_result.artifacts["normalized_wav"]
+        asr_output = self.asr_engine.transcribe(normalized_wav)
+        voice_note = ingest_result.voice_note or VoiceNoteResult(file=source.name, duration_sec=None)
+        voice_note.segments = list(asr_output.segments)
+        voice_note.full_original_text = self._merge_original_text(voice_note.segments)
+
+        return PipelineResult(
+            source=ingest_result.source,
+            stage=ingest_result.stage,
+            status=ingest_result.status,
+            message=(
+                "Input validated, probed, normalized, and passed through the ASR adapter boundary. "
+                "Translation is not implemented in Slice S4."
+            ),
+            code=ingest_result.code,
+            details={
+                **ingest_result.details,
+                "asr": {
+                    "detected_language": asr_output.detected_language,
+                    "segment_count": len(asr_output.segments),
+                },
+            },
+            artifacts=ingest_result.artifacts,
+            voice_note=voice_note,
+        )
 
     def batch(self, source_dir: Path) -> PipelineResult:
         context = PipelineContext(
@@ -89,6 +119,10 @@ class VaaniPipeline:
                 "watching and persistence are not implemented yet."
             ),
         )
+
+    @staticmethod
+    def _merge_original_text(segments: list[SegmentResult]) -> str:
+        return " ".join(segment.original_text for segment in segments if segment.original_text).strip()
 
 
 class IngestStage:

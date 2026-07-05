@@ -1,6 +1,6 @@
 # VaaniScript v0.1
 
-VaaniScript v0.1 currently implements S3 foundations from `TECH_SPEC.md`: ingest validation/normalization plus stable pipeline result contracts for a future local-first Bengali/Hindi voice-note pipeline.
+VaaniScript v0.1 currently implements S4 foundations from `TECH_SPEC.md`: ingest validation/normalization, stable pipeline result contracts, and an ASR adapter boundary for a future local-first Bengali/Hindi voice-note pipeline.
 
 ## Scope in v0.1
 
@@ -12,6 +12,7 @@ VaaniScript v0.1 currently implements S3 foundations from `TECH_SPEC.md`: ingest
 - Deterministic normalization to 16kHz mono WAV (`s16`) under the workspace directory
 - Structured ingest-stage CLI output describing validation/probe/normalize success or controlled failure
 - Stable `voice_note` JSON contract with file, duration, segments, and full-text fields ready for future ASR/translation slices
+- Mockable ASR engine boundary with a lazy `faster-whisper` adapter that does not require the dependency for unit tests
 
 ## Out of Scope in v0.1
 
@@ -42,4 +43,4 @@ vaaniscript batch path\to\folder
 vaaniscript watch path\to\folder
 ```
 
-`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, and normalizes supported audio to a deterministic WAV path before any future ASR work. It prints a structured ingest-stage result plus a stable placeholder `voice_note` object and does not transcribe yet. `batch` and `watch` remain placeholders.
+`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, normalizes supported audio to a deterministic WAV path, and passes that WAV through the ASR adapter boundary. By default the CLI still emits deterministic placeholder transcript content unless a real ASR engine is explicitly wired in. `batch` and `watch` remain placeholders.

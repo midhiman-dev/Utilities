@@ -23,7 +23,7 @@ def build_pipeline() -> VaaniPipeline:
 
 @app.command()
 def transcribe(source: Path) -> None:
-    """Validate, probe, and normalize a single audio file."""
+    """Validate, normalize, and pass audio through the ASR adapter boundary."""
 
     result = build_pipeline().transcribe(source)
     typer.echo(result.to_json())

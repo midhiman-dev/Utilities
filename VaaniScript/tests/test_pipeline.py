@@ -2,7 +2,9 @@ import json
 import subprocess
 from pathlib import Path
 
+from vaaniscript.asr.whisper_engine import AsrOutput, FakeAsrEngine
 from vaaniscript.config import Settings
+from vaaniscript.contracts import SegmentResult
 from vaaniscript.pipeline import VaaniPipeline
 
 
@@ -26,16 +28,19 @@ def test_pipeline_probes_before_normalize(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_runner)
 
     settings = Settings(app={"workspace_dir": str(tmp_path / "work")})
-    result = VaaniPipeline(settings).transcribe(source)
+    asr_engine = FakeAsrEngine()
+    result = VaaniPipeline(settings, asr_engine=asr_engine).transcribe(source)
 
     assert result.status == "ready"
     assert result.stage == "ingest"
     assert [command[0] for command in calls] == ["ffprobe", "ffmpeg"]
+    assert asr_engine.calls == [tmp_path / "work" / "normalized" / "voice.opus.normalized.wav"]
     assert result.artifacts["normalized_wav"] == tmp_path / "work" / "normalized" / "voice.opus.normalized.wav"
     assert result.voice_note is not None
     assert result.voice_note.file == "voice.opus"
     assert result.voice_note.duration_sec == 9.5
     assert result.voice_note.segments == []
+    assert result.details["asr"]["segment_count"] == 0
 
 
 def test_pipeline_surfaces_probe_failure(tmp_path: Path, monkeypatch) -> None:
@@ -46,12 +51,14 @@ def test_pipeline_surfaces_probe_failure(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
 
-    result = VaaniPipeline(Settings()).transcribe(source)
+    asr_engine = FakeAsrEngine()
+    result = VaaniPipeline(Settings(), asr_engine=asr_engine).transcribe(source)
 
     assert result.status == "error"
     assert result.stage == "ingest"
     assert result.code == "decode_failed"
     assert result.details["stderr"] == "not decodable"
+    assert asr_engine.calls == []
     assert result.voice_note is not None
     assert result.voice_note.file == "broken.opus"
     assert result.voice_note.duration_sec is None
@@ -77,7 +84,8 @@ def test_pipeline_result_is_json_serializable(tmp_path: Path, monkeypatch) -> No
     monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_probe)
     monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_probe)
 
-    result = VaaniPipeline(Settings(app={"workspace_dir": str(tmp_path / "work")})).transcribe(source)
+    asr_engine = FakeAsrEngine()
+    result = VaaniPipeline(Settings(app={"workspace_dir": str(tmp_path / "work")}), asr_engine=asr_engine).transcribe(source)
     payload = result.to_dict()
 
     assert payload["details"]["probe"]["extension"] == ".mp3"
@@ -89,3 +97,50 @@ def test_pipeline_result_is_json_serializable(tmp_path: Path, monkeypatch) -> No
         "full_english_text": "",
         "full_original_text": "",
     }
+
+
+def test_pipeline_maps_asr_segments_into_voice_note(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "voice.opus"
+
+    def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "ffprobe":
+            return _completed(stdout='{"format": {"duration": "4.5", "format_name": "ogg"}}')
+        return _completed()
+
+    monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
+    monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_runner)
+
+    asr_engine = FakeAsrEngine(
+        output=AsrOutput(
+            detected_language="hi",
+            segments=[
+                SegmentResult(
+                    start=0.0,
+                    end=1.0,
+                    detected_lang="hi",
+                    original_text="नमस्ते",
+                    english_text="",
+                    confidence=0.91,
+                    flags=[],
+                ),
+                SegmentResult(
+                    start=1.0,
+                    end=2.0,
+                    detected_lang="hi",
+                    original_text="दुनिया",
+                    english_text="",
+                    confidence=0.83,
+                    flags=[],
+                ),
+            ],
+        )
+    )
+
+    result = VaaniPipeline(Settings(app={"workspace_dir": str(tmp_path / "work")}), asr_engine=asr_engine).transcribe(source)
+
+    assert result.voice_note is not None
+    assert result.voice_note.segments[0].original_text == "नमस्ते"
+    assert result.voice_note.segments[0].english_text == ""
+    assert result.voice_note.full_original_text == "नमस्ते दुनिया"
+    assert result.voice_note.full_english_text == ""
+    assert result.details["asr"] == {"detected_language": "hi", "segment_count": 2}
