@@ -33,15 +33,21 @@ def _wheel_name() -> str:
 
 def _metadata_text() -> str:
     project = _project_metadata()
+    optional_dependencies = project.get("optional-dependencies", {})
     lines = [
         "Metadata-Version: 2.1",
         f"Name: {project['name']}",
         f"Version: {project['version']}",
         f"Summary: {project['description']}",
         f"Requires-Python: {project['requires-python']}",
-        "Provides-Extra: dev",
-        "",
     ]
+    for requirement in project.get("dependencies", []):
+        lines.append(f"Requires-Dist: {requirement}")
+    for extra_name, requirements in optional_dependencies.items():
+        lines.append(f"Provides-Extra: {extra_name}")
+        for requirement in requirements:
+            lines.append(f'Requires-Dist: {requirement}; extra == "{extra_name}"')
+    lines.append("")
     return "\n".join(lines)
 
 

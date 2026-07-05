@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import typer
@@ -23,10 +24,10 @@ def build_pipeline() -> VaaniPipeline:
 
 @app.command()
 def transcribe(source: Path) -> None:
-    """Placeholder single-file transcription command."""
+    """Validate, probe, and normalize a single audio file."""
 
     result = build_pipeline().transcribe(source)
-    typer.echo(result.message)
+    typer.echo(json.dumps(result.to_dict(), indent=2))
 
 
 @app.command()

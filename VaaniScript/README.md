@@ -1,14 +1,16 @@
 # VaaniScript v0.1
 
-VaaniScript v0.1 is Slice S0 from `TECH_SPEC.md`: repo foundation plus an executable CLI skeleton for a local-first Bengali/Hindi voice-note pipeline.
+VaaniScript v0.1 currently implements Slice S1 from `TECH_SPEC.md`: audio ingest validation, probe, and normalization for a future local-first Bengali/Hindi voice-note pipeline.
 
 ## Scope in v0.1
 
 - Installable Python 3.13 package with a `vaaniscript` entry point
 - Typer CLI skeleton with `transcribe`, `batch`, `watch`, and `version`
 - Typed config loading via `pydantic-settings`
-- Placeholder pipeline interfaces for the future flow:
-  ingest -> VAD/denoise -> ASR -> language detection -> translation -> storage/export
+- Safe ingest support for `.opus`, `.mp3`, and `.m4a`
+- `ffprobe` validation before `ffmpeg` normalization
+- Deterministic normalization to 16kHz mono WAV (`s16`) under the workspace directory
+- Structured ingest-stage CLI output describing validation/probe/normalize success or controlled failure
 
 ## Out of Scope in v0.1
 
@@ -39,4 +41,4 @@ vaaniscript batch path\to\folder
 vaaniscript watch path\to\folder
 ```
 
-`version` is fully implemented. `transcribe`, `batch`, and `watch` are executable CLI placeholders in S0 and intentionally do not perform audio processing yet.
+`version` is fully implemented. `transcribe` now validates the input extension, runs `ffprobe`, and normalizes supported audio to a deterministic WAV path before any future ASR work. It prints a structured ingest-stage result and does not transcribe yet. `batch` and `watch` remain placeholders.
