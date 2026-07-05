@@ -8,3 +8,4 @@ watch/
 config.toml
 __pycache__/
 .pytest_cache/
+**/.pytest_tmp/
