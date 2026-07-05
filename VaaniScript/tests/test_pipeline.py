@@ -32,6 +32,10 @@ def test_pipeline_probes_before_normalize(tmp_path: Path, monkeypatch) -> None:
     assert result.stage == "ingest"
     assert [command[0] for command in calls] == ["ffprobe", "ffmpeg"]
     assert result.artifacts["normalized_wav"] == tmp_path / "work" / "normalized" / "voice.opus.normalized.wav"
+    assert result.voice_note is not None
+    assert result.voice_note.file == "voice.opus"
+    assert result.voice_note.duration_sec == 9.5
+    assert result.voice_note.segments == []
 
 
 def test_pipeline_surfaces_probe_failure(tmp_path: Path, monkeypatch) -> None:
@@ -48,6 +52,9 @@ def test_pipeline_surfaces_probe_failure(tmp_path: Path, monkeypatch) -> None:
     assert result.stage == "ingest"
     assert result.code == "decode_failed"
     assert result.details["stderr"] == "not decodable"
+    assert result.voice_note is not None
+    assert result.voice_note.file == "broken.opus"
+    assert result.voice_note.duration_sec is None
 
 
 def test_pipeline_surfaces_unsupported_format(tmp_path: Path) -> None:
@@ -55,6 +62,8 @@ def test_pipeline_surfaces_unsupported_format(tmp_path: Path) -> None:
 
     assert result.status == "error"
     assert result.code == "unsupported_format"
+    assert result.voice_note is not None
+    assert result.voice_note.file == "voice.wav"
 
 
 def test_pipeline_result_is_json_serializable(tmp_path: Path, monkeypatch) -> None:
@@ -73,3 +82,10 @@ def test_pipeline_result_is_json_serializable(tmp_path: Path, monkeypatch) -> No
 
     assert payload["details"]["probe"]["extension"] == ".mp3"
     assert json.loads(json.dumps(payload))["stage"] == "ingest"
+    assert payload["voice_note"] == {
+        "file": "voice.mp3",
+        "duration_sec": 5.0,
+        "segments": [],
+        "full_english_text": "",
+        "full_original_text": "",
+    }

@@ -2,54 +2,23 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 from typing import Protocol
 
 from .config import Settings
+from .contracts import PipelineStageResult, TranscriptionRequest, VoiceNoteResult
 from .errors import DURATION_LIMIT_EXCEEDED, VaaniScriptError
 from .ingest import normalize_audio, probe_audio
 
 
 @dataclass(slots=True)
 class PipelineContext:
-    source: Path
+    request: TranscriptionRequest
     settings: Settings
 
 
-@dataclass(slots=True)
-class PipelineResult:
-    source: Path
-    stage: str
-    status: str
-    message: str
-    code: str | None = None
-    details: dict[str, Any] = field(default_factory=dict)
-    artifacts: dict[str, Path] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "source": str(self.source),
-            "stage": self.stage,
-            "status": self.status,
-            "message": self.message,
-            "code": self.code,
-            "details": _serialize_value(self.details),
-            "artifacts": {key: str(value) for key, value in self.artifacts.items()},
-        }
-
-
-def _serialize_value(value: Any) -> Any:
-    if isinstance(value, Path):
-        return str(value)
-    if hasattr(value, "__dataclass_fields__"):
-        return {key: _serialize_value(item) for key, item in asdict(value).items()}
-    if isinstance(value, dict):
-        return {key: _serialize_value(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_serialize_value(item) for item in value]
-    return value
+PipelineResult = PipelineStageResult
 
 
 class PipelineStage(Protocol):
@@ -63,7 +32,7 @@ class PlaceholderStage:
 
     def run(self, context: PipelineContext) -> PipelineResult:
         return PipelineResult(
-            source=context.source,
+            source=context.request.source,
             stage=self.name,
             status="placeholder",
             message=(
@@ -85,11 +54,17 @@ class VaaniPipeline:
         self.storage = PlaceholderStage("storage")
 
     def transcribe(self, source: Path) -> PipelineResult:
-        context = PipelineContext(source=source, settings=self.settings)
+        context = PipelineContext(
+            request=TranscriptionRequest(source=source, workspace_dir=self.settings.app.workspace_dir),
+            settings=self.settings,
+        )
         return self.ingest.run(context)
 
     def batch(self, source_dir: Path) -> PipelineResult:
-        context = PipelineContext(source=source_dir, settings=self.settings)
+        context = PipelineContext(
+            request=TranscriptionRequest(source=source_dir, workspace_dir=self.settings.app.workspace_dir),
+            settings=self.settings,
+        )
         return PipelineResult(
             source=source_dir,
             stage="batch",
@@ -101,7 +76,10 @@ class VaaniPipeline:
         )
 
     def watch(self, source_dir: Path) -> PipelineResult:
-        context = PipelineContext(source=source_dir, settings=self.settings)
+        context = PipelineContext(
+            request=TranscriptionRequest(source=source_dir, workspace_dir=self.settings.app.workspace_dir),
+            settings=self.settings,
+        )
         return PipelineResult(
             source=source_dir,
             stage="watch",
@@ -116,21 +94,25 @@ class VaaniPipeline:
 class IngestStage:
     def run(self, context: PipelineContext) -> PipelineResult:
         try:
-            probe = probe_audio(context.source)
+            probe = probe_audio(context.request.source)
             self._validate_duration(probe.duration_seconds, context)
-            normalized = normalize_audio(probe, work_dir=context.settings.app.workspace_dir)
+            normalized = normalize_audio(probe, work_dir=context.request.workspace_dir)
         except VaaniScriptError as exc:
             return PipelineResult(
-                source=context.source,
+                source=context.request.source,
                 stage="ingest",
                 status="error",
                 message=exc.message,
                 code=exc.code,
                 details=exc.details,
+                voice_note=VoiceNoteResult(
+                    file=context.request.source.name,
+                    duration_sec=None,
+                ),
             )
 
         return PipelineResult(
-            source=context.source,
+            source=context.request.source,
             stage="ingest",
             status="ready",
             code=None,
@@ -140,6 +122,10 @@ class IngestStage:
             ),
             details={"probe": probe},
             artifacts={"normalized_wav": normalized.output_path},
+            voice_note=VoiceNoteResult(
+                file=context.request.source.name,
+                duration_sec=probe.duration_seconds,
+            ),
         )
 
     @staticmethod
@@ -152,7 +138,7 @@ class IngestStage:
             raise VaaniScriptError(
                 code=DURATION_LIMIT_EXCEEDED,
                 message="Audio duration exceeds the configured limit.",
-                source=context.source,
+                source=context.request.source,
                 details={
                     "duration_seconds": duration_seconds,
                     "max_duration_seconds": max_duration_seconds,

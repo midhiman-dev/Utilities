@@ -47,3 +47,10 @@ def test_transcribe_reports_structured_ingest_result(tmp_path: Path, monkeypatch
     assert payload["stage"] == "ingest"
     assert payload["status"] == "error"
     assert payload["code"] == "unsupported_format"
+    assert payload["voice_note"] == {
+        "file": "voice.wav",
+        "duration_sec": None,
+        "segments": [],
+        "full_english_text": "",
+        "full_original_text": "",
+    }

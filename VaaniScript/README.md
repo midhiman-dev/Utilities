@@ -1,6 +1,6 @@
 # VaaniScript v0.1
 
-VaaniScript v0.1 currently implements Slice S1 from `TECH_SPEC.md`: audio ingest validation, probe, and normalization for a future local-first Bengali/Hindi voice-note pipeline.
+VaaniScript v0.1 currently implements S3 foundations from `TECH_SPEC.md`: ingest validation/normalization plus stable pipeline result contracts for a future local-first Bengali/Hindi voice-note pipeline.
 
 ## Scope in v0.1
 
@@ -11,6 +11,7 @@ VaaniScript v0.1 currently implements Slice S1 from `TECH_SPEC.md`: audio ingest
 - `ffprobe` validation before `ffmpeg` normalization
 - Deterministic normalization to 16kHz mono WAV (`s16`) under the workspace directory
 - Structured ingest-stage CLI output describing validation/probe/normalize success or controlled failure
+- Stable `voice_note` JSON contract with file, duration, segments, and full-text fields ready for future ASR/translation slices
 
 ## Out of Scope in v0.1
 
@@ -41,4 +42,4 @@ vaaniscript batch path\to\folder
 vaaniscript watch path\to\folder
 ```
 
-`version` is fully implemented. `transcribe` now validates the input extension, runs `ffprobe`, and normalizes supported audio to a deterministic WAV path before any future ASR work. It prints a structured ingest-stage result and does not transcribe yet. `batch` and `watch` remain placeholders.
+`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, and normalizes supported audio to a deterministic WAV path before any future ASR work. It prints a structured ingest-stage result plus a stable placeholder `voice_note` object and does not transcribe yet. `batch` and `watch` remain placeholders.

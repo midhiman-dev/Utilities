@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -27,7 +26,7 @@ def transcribe(source: Path) -> None:
     """Validate, probe, and normalize a single audio file."""
 
     result = build_pipeline().transcribe(source)
-    typer.echo(json.dumps(result.to_dict(), indent=2))
+    typer.echo(result.to_json())
 
 
 @app.command()
