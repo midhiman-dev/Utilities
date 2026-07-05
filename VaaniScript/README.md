@@ -1,6 +1,6 @@
 # VaaniScript v0.1
 
-VaaniScript v0.1 currently implements S4 foundations from `TECH_SPEC.md`: ingest validation/normalization, stable pipeline result contracts, and an ASR adapter boundary for a future local-first Bengali/Hindi voice-note pipeline.
+VaaniScript v0.1 currently implements S5 foundations from `TECH_SPEC.md`: ingest validation/normalization, stable pipeline result contracts, an ASR adapter boundary, and a translation adapter boundary for a future local-first Bengali/Hindi voice-note pipeline.
 
 ## Scope in v0.1
 
@@ -11,14 +11,15 @@ VaaniScript v0.1 currently implements S4 foundations from `TECH_SPEC.md`: ingest
 - `ffprobe` validation before `ffmpeg` normalization
 - Deterministic normalization to 16kHz mono WAV (`s16`) under the workspace directory
 - Structured ingest-stage CLI output describing validation/probe/normalize success or controlled failure
-- Stable `voice_note` JSON contract with file, duration, segments, and full-text fields ready for future ASR/translation slices
+- Stable `voice_note` JSON contract with file, duration, segments, `original_text`, `english_text`, and full-text fields
 - Mockable ASR engine boundary with a lazy `faster-whisper` adapter that does not require the dependency for unit tests
+- Mockable translation boundary with deterministic fake translation in tests and a lazy IndicTrans2 adapter that does not require translation dependencies for unit tests
 
 ## Out of Scope in v0.1
 
 - GUI
 - Cloud fallback
-- Real ASR or translation
+- Real ASR
 - Hinglish or romanized text support
 - Sanscript or glossary logic
 - Auth, web API, streaming, diarization
@@ -43,4 +44,4 @@ vaaniscript batch path\to\folder
 vaaniscript watch path\to\folder
 ```
 
-`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, normalizes supported audio to a deterministic WAV path, and passes that WAV through the ASR adapter boundary. By default the CLI still emits deterministic placeholder transcript content unless a real ASR engine is explicitly wired in. `batch` and `watch` remain placeholders.
+`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, normalizes supported audio to a deterministic WAV path, passes that WAV through the ASR adapter boundary, and then routes supported Hindi/Bengali segments through the translation adapter boundary. By default the CLI still emits deterministic empty English text unless a real ASR engine and translator are explicitly wired in. `batch` and `watch` remain placeholders.
