@@ -1,0 +1,16 @@
+[app]
+workspace_dir = "./workspace"
+input_dir = "./audio"
+output_dir = "./outputs"
+database_path = "./vaaniscript.sqlite3"
+log_level = "INFO"
+allow_cloud_fallback = false
+model_root = "./models"
+default_source_language = ""
+
+[pipeline]
+asr_model = "small"
+translation_enabled = false
+denoise_enabled = false
+vad_enabled = false
+max_audio_minutes = 10

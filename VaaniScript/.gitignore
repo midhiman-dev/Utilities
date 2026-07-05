@@ -1,0 +1,10 @@
+models/
+audio/
+outputs/
+watch/
+*.sqlite
+*.sqlite3
+*.db
+config.toml
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,27 @@
+[build-system]
+requires = []
+build-backend = "_build_backend"
+backend-path = ["."]
+
+[project]
+name = "vaaniscript"
+version = "0.1.0"
+description = "Local-first CLI scaffold for Bengali and Hindi voice-note transcription."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "MIT" }
+authors = [
+  { name = "Dhiman" }
+]
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = []
+
+[project.scripts]
+vaaniscript = "vaaniscript.cli:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--basetemp=.pytest_tmp"
