@@ -1,12 +1,11 @@
-"""Pipeline interfaces and Slice S1 ingest orchestration."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
-from .asr import AsrEngine, NoOpAsrEngine
+from .asr import AsrEngine, AsrOutput, NoOpAsrEngine
+from .audio import AudioChunk, DenoiseProcessor, NoOpDenoiseProcessor, NoOpVadProcessor, VadProcessor
 from .config import Settings
 from .contracts import PipelineStageResult, SegmentResult, TranscriptionRequest, VoiceNoteResult
 from .errors import DURATION_LIMIT_EXCEEDED, VaaniScriptError
@@ -52,10 +51,14 @@ class VaaniPipeline:
         settings: Settings,
         *,
         asr_engine: AsrEngine | None = None,
+        vad_processor: VadProcessor | None = None,
+        denoise_processor: DenoiseProcessor | None = None,
         translator: Translator | None = None,
     ) -> None:
         self.settings = settings
         self.asr_engine = asr_engine or NoOpAsrEngine()
+        self.vad_processor = vad_processor or NoOpVadProcessor()
+        self.denoise_processor = denoise_processor or NoOpDenoiseProcessor()
         self.translator = translator or NoOpTranslator()
         self.ingest = IngestStage()
         self.audio = PlaceholderStage("audio")
@@ -74,8 +77,26 @@ class VaaniPipeline:
             return ingest_result
 
         normalized_wav = ingest_result.artifacts["normalized_wav"]
-        asr_output = self.asr_engine.transcribe(normalized_wav)
+        speech_chunks = self.vad_processor.detect_speech_chunks(normalized_wav)
         voice_note = ingest_result.voice_note or VoiceNoteResult(file=source.name, duration_sec=None)
+        if not speech_chunks:
+            return self._build_no_speech_result(
+                ingest_result=ingest_result,
+                voice_note=voice_note,
+                chunk_count=0,
+                denoised_chunk_count=0,
+            )
+
+        denoised_chunks = self.denoise_processor.denoise_chunks(speech_chunks)
+        if not denoised_chunks:
+            return self._build_no_speech_result(
+                ingest_result=ingest_result,
+                voice_note=voice_note,
+                chunk_count=len(speech_chunks),
+                denoised_chunk_count=0,
+            )
+
+        asr_output = self._transcribe_chunks(denoised_chunks)
         voice_note.segments = self._translate_segments(asr_output.segments)
         voice_note.full_original_text = self._merge_original_text(voice_note.segments)
         voice_note.full_english_text = self._merge_english_text(voice_note.segments)
@@ -85,12 +106,17 @@ class VaaniPipeline:
             stage=ingest_result.stage,
             status=ingest_result.status,
             message=(
-                "Input validated, probed, normalized, passed through the ASR adapter boundary, "
+                "Input validated, probed, normalized, preprocessed, passed through the ASR adapter boundary, "
                 "and routed through the translation adapter boundary."
             ),
             code=ingest_result.code,
             details={
                 **ingest_result.details,
+                "audio": {
+                    "chunk_count": len(speech_chunks),
+                    "denoised_chunk_count": len(denoised_chunks),
+                    "speech_detected": True,
+                },
                 "asr": {
                     "detected_language": asr_output.detected_language,
                     "segment_count": len(asr_output.segments),
@@ -137,6 +163,67 @@ class VaaniPipeline:
     @staticmethod
     def _merge_english_text(segments: list[SegmentResult]) -> str:
         return " ".join(segment.english_text for segment in segments if segment.english_text).strip()
+
+    def _build_no_speech_result(
+        self,
+        *,
+        ingest_result: PipelineResult,
+        voice_note: VoiceNoteResult,
+        chunk_count: int,
+        denoised_chunk_count: int,
+    ) -> PipelineResult:
+        voice_note.segments = []
+        voice_note.full_original_text = ""
+        voice_note.full_english_text = ""
+        return PipelineResult(
+            source=ingest_result.source,
+            stage=ingest_result.stage,
+            status=ingest_result.status,
+            message=(
+                "Input validated, probed, normalized, and preprocessed, but no speech chunks were detected."
+            ),
+            code="no_speech_detected",
+            details={
+                **ingest_result.details,
+                "audio": {
+                    "chunk_count": chunk_count,
+                    "denoised_chunk_count": denoised_chunk_count,
+                    "speech_detected": False,
+                    "flags": ["no_speech_detected"],
+                },
+                "asr": {
+                    "detected_language": None,
+                    "segment_count": 0,
+                },
+            },
+            artifacts=ingest_result.artifacts,
+            voice_note=voice_note,
+        )
+
+    def _transcribe_chunks(self, chunks: list[AudioChunk]) -> AsrOutput:
+        merged_segments: list[SegmentResult] = []
+        detected_language: str | None = None
+
+        for chunk in chunks:
+            chunk_output = self.asr_engine.transcribe(chunk.path)
+            if detected_language is None and chunk_output.detected_language is not None:
+                detected_language = chunk_output.detected_language
+            merged_segments.extend(self._offset_segments(chunk_output.segments, chunk.start_sec))
+
+        return AsrOutput(segments=merged_segments, detected_language=detected_language)
+
+    @staticmethod
+    def _offset_segments(segments: list[SegmentResult], offset_seconds: float) -> list[SegmentResult]:
+        if offset_seconds == 0:
+            return list(segments)
+        return [
+            replace(
+                segment,
+                start=round(segment.start + offset_seconds, 4),
+                end=round(segment.end + offset_seconds, 4),
+            )
+            for segment in segments
+        ]
 
     def _translate_segments(self, segments: list[SegmentResult]) -> list[SegmentResult]:
         translated_segments: list[SegmentResult] = []

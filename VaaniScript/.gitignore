@@ -1,5 +1,9 @@
 models/
 audio/
+!vaaniscript/audio/
+!vaaniscript/audio/__init__.py
+!vaaniscript/audio/vad.py
+!vaaniscript/audio/denoise.py
 outputs/
 watch/
 *.sqlite

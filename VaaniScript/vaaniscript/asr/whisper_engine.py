@@ -26,10 +26,13 @@ class AsrEngine(Protocol):
 @dataclass(slots=True)
 class FakeAsrEngine:
     output: AsrOutput = field(default_factory=AsrOutput)
+    outputs: list[AsrOutput] = field(default_factory=list)
     calls: list[Path] = field(default_factory=list)
 
     def transcribe(self, audio_path: Path) -> AsrOutput:
         self.calls.append(audio_path)
+        if self.outputs:
+            return self.outputs.pop(0)
         return self.output
 
 

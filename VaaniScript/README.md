@@ -1,6 +1,6 @@
 # VaaniScript v0.1
 
-VaaniScript v0.1 currently implements S5 foundations from `TECH_SPEC.md`: ingest validation/normalization, stable pipeline result contracts, an ASR adapter boundary, and a translation adapter boundary for a future local-first Bengali/Hindi voice-note pipeline.
+VaaniScript v0.1 currently implements S6 foundations from `TECH_SPEC.md`: ingest validation/normalization, audio preprocessing boundaries, stable pipeline result contracts, an ASR adapter boundary, and a translation adapter boundary for a future local-first Bengali/Hindi voice-note pipeline.
 
 ## Scope in v0.1
 
@@ -10,6 +10,8 @@ VaaniScript v0.1 currently implements S5 foundations from `TECH_SPEC.md`: ingest
 - Safe ingest support for `.opus`, `.mp3`, and `.m4a`
 - `ffprobe` validation before `ffmpeg` normalization
 - Deterministic normalization to 16kHz mono WAV (`s16`) under the workspace directory
+- Mockable VAD/chunking boundary between normalization and ASR
+- Mockable denoise boundary between VAD/chunking and ASR
 - Structured ingest-stage CLI output describing validation/probe/normalize success or controlled failure
 - Stable `voice_note` JSON contract with file, duration, segments, `original_text`, `english_text`, and full-text fields
 - Mockable ASR engine boundary with a lazy `faster-whisper` adapter that does not require the dependency for unit tests
@@ -44,4 +46,4 @@ vaaniscript batch path\to\folder
 vaaniscript watch path\to\folder
 ```
 
-`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, normalizes supported audio to a deterministic WAV path, passes that WAV through the ASR adapter boundary, and then routes supported Hindi/Bengali segments through the translation adapter boundary. By default the CLI still emits deterministic empty English text unless a real ASR engine and translator are explicitly wired in. `batch` and `watch` remain placeholders.
+`version` is fully implemented. `transcribe` validates the input extension, runs `ffprobe`, normalizes supported audio to a deterministic WAV path, routes that audio through VAD/chunking and denoise boundaries, passes the resulting chunk WAV paths through the ASR adapter boundary, and then routes supported Hindi/Bengali segments through the translation adapter boundary. The no-speech path remains deterministic JSON with `code = "no_speech_detected"`. By default the CLI still emits deterministic empty English text unless a real ASR engine and translator are explicitly wired in. `batch` and `watch` remain placeholders.
