@@ -18,8 +18,8 @@ def test_faster_whisper_engine_is_lazy_on_init(monkeypatch) -> None:
 
 def test_faster_whisper_engine_maps_segments_without_real_dependency(monkeypatch) -> None:
     fake_segments = [
-        SimpleNamespace(start=0.0, end=1.2, text="नमस्ते", avg_logprob=-0.5),
-        SimpleNamespace(start=1.2, end=2.5, text="দুনিয়া", avg_logprob=-1.0),
+        SimpleNamespace(start=0.0, end=1.2, text="à¤¨à¤®à¤¸à¥à¤¤à¥‡", avg_logprob=-0.5, no_speech_prob=0.1),
+        SimpleNamespace(start=1.2, end=2.5, text="à¦¦à§à¦¨à¦¿à§Ÿà¦¾", avg_logprob=-1.0, no_speech_prob=0.2),
     ]
     fake_info = SimpleNamespace(language="hi")
 
@@ -52,7 +52,7 @@ def test_faster_whisper_engine_maps_segments_without_real_dependency(monkeypatch
             start=0.0,
             end=1.2,
             detected_lang="hi",
-            original_text="नमस्ते",
+            original_text="à¤¨à¤®à¤¸à¥à¤¤à¥‡",
             english_text="",
             confidence=0.9,
             flags=[],
@@ -61,11 +61,15 @@ def test_faster_whisper_engine_maps_segments_without_real_dependency(monkeypatch
             start=1.2,
             end=2.5,
             detected_lang="hi",
-            original_text="দুনিয়া",
+            original_text="à¦¦à§à¦¨à¦¿à§Ÿà¦¾",
             english_text="",
             confidence=0.8,
             flags=[],
         ),
+    ]
+    assert [(quality.avg_logprob, quality.no_speech_prob) for quality in output.segment_qualities] == [
+        (-0.5, 0.1),
+        (-1.0, 0.2),
     ]
 
 

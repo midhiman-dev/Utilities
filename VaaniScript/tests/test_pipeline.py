@@ -2,7 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from vaaniscript.asr.whisper_engine import AsrOutput, FakeAsrEngine
+from vaaniscript.asr.whisper_engine import AsrOutput, AsrSegmentQuality, FakeAsrEngine
 from vaaniscript.audio import AudioChunk, FakeDenoiseProcessor, FakeVadProcessor
 from vaaniscript.config import Settings
 from vaaniscript.contracts import SegmentResult
@@ -155,6 +155,36 @@ def test_pipeline_surfaces_probe_failure_and_skips_vad_denoise_asr_and_translati
     assert result.voice_note.duration_sec is None
 
 
+def test_pipeline_returns_duration_limit_exceeded_before_vad_and_asr(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "long.opus"
+
+    def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "ffprobe":
+            return _completed(stdout='{"format": {"duration": "61", "format_name": "ogg"}}')
+        raise AssertionError(f"Unexpected command: {command}")
+
+    monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
+
+    vad_processor = FakeVadProcessor(chunks=[AudioChunk(path=Path("unused.wav"))])
+    denoise_processor = FakeDenoiseProcessor()
+    asr_engine = FakeAsrEngine()
+    translator = FakeTranslator()
+    result = VaaniPipeline(
+        Settings(pipeline={"max_audio_minutes": 1}),
+        asr_engine=asr_engine,
+        vad_processor=vad_processor,
+        denoise_processor=denoise_processor,
+        translator=translator,
+    ).transcribe(source)
+
+    assert result.status == "error"
+    assert result.code == "duration_limit_exceeded"
+    assert vad_processor.calls == []
+    assert denoise_processor.calls == []
+    assert asr_engine.calls == []
+    assert translator.calls == []
+
+
 def test_pipeline_surfaces_unsupported_format(tmp_path: Path) -> None:
     result = VaaniPipeline(Settings()).transcribe(tmp_path / "voice.wav")
 
@@ -253,6 +283,82 @@ def test_pipeline_skips_asr_when_vad_returns_no_speech_chunks(tmp_path: Path, mo
     assert denoise_processor.calls == []
     assert asr_engine.calls == []
     assert translator.calls == []
+
+
+def test_pipeline_treats_high_no_speech_probability_as_no_speech(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "voice.opus"
+
+    def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "ffprobe":
+            return _completed(stdout='{"format": {"duration": "4.5", "format_name": "ogg"}}')
+        return _completed()
+
+    monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
+    monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_runner)
+
+    asr_engine = FakeAsrEngine(
+        output=AsrOutput(
+            detected_language="hi",
+            segments=[
+                SegmentResult(
+                    start=0.0,
+                    end=0.8,
+                    detected_lang="hi",
+                    original_text="",
+                    english_text="",
+                    confidence=0.2,
+                    flags=[],
+                )
+            ],
+            segment_qualities=[AsrSegmentQuality(no_speech_prob=0.9)],
+        )
+    )
+
+    result = VaaniPipeline(
+        Settings(app={"workspace_dir": str(tmp_path / "work")}),
+        asr_engine=asr_engine,
+    ).transcribe(source)
+
+    assert result.status == "ready"
+    assert result.code == "no_speech_detected"
+    assert result.voice_note is not None
+    assert result.voice_note.segments == []
+
+
+def test_pipeline_flags_low_confidence_and_hallucination_without_crashing(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "voice.opus"
+
+    def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "ffprobe":
+            return _completed(stdout='{"format": {"duration": "4.0", "format_name": "ogg"}}')
+        return _completed()
+
+    monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
+    monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_runner)
+
+    result = VaaniPipeline(
+        Settings(app={"workspace_dir": str(tmp_path / "work")}),
+        asr_engine=FakeAsrEngine(
+            output=AsrOutput(
+                detected_language="hi",
+                segments=[
+                    SegmentResult(
+                        start=0.0,
+                        end=1.0,
+                        detected_lang="hi",
+                        original_text="नमस्ते नमस्ते नमस्ते",
+                        english_text="",
+                        confidence=0.2,
+                        flags=[],
+                    )
+                ],
+                segment_qualities=[AsrSegmentQuality(avg_logprob=-1.3, no_speech_prob=0.2)],
+            )
+        ),
+    ).transcribe(source)
+
+    assert result.voice_note is not None
+    assert result.voice_note.segments[0].flags == ["uncertain", "hallucination_suspected"]
 
 
 def test_pipeline_maps_multiple_preprocessed_chunks_into_voice_note_in_order(tmp_path: Path, monkeypatch) -> None:
@@ -451,3 +557,83 @@ def test_ambiguous_and_unknown_segments_are_flagged_and_not_translated(tmp_path:
         "translation_skipped_unsupported_language",
     ]
     assert result.voice_note.full_english_text == ""
+
+
+def test_whisper_language_and_script_disagreement_flags_lang_ambiguous(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "voice.opus"
+
+    def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "ffprobe":
+            return _completed(stdout='{"format": {"duration": "4.0", "format_name": "ogg"}}')
+        return _completed()
+
+    monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
+    monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_runner)
+
+    result = VaaniPipeline(
+        Settings(app={"workspace_dir": str(tmp_path / "work")}),
+        asr_engine=FakeAsrEngine(
+            output=AsrOutput(
+                detected_language="hi",
+                segments=[
+                    SegmentResult(
+                        start=0.0,
+                        end=1.0,
+                        detected_lang="hi",
+                        original_text="নমস্কার",
+                        english_text="",
+                        confidence=0.8,
+                        flags=[],
+                    )
+                ],
+            )
+        ),
+        translator=FakeTranslator(),
+    ).transcribe(source)
+
+    assert result.voice_note is not None
+    assert result.voice_note.segments[0].detected_lang == "hi"
+    assert result.voice_note.segments[0].flags == ["lang_ambiguous"]
+
+
+def test_latin_only_text_with_whisper_language_hint_is_not_silently_translated(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "voice.opus"
+
+    def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "ffprobe":
+            return _completed(stdout='{"format": {"duration": "4.0", "format_name": "ogg"}}')
+        return _completed()
+
+    monkeypatch.setattr("vaaniscript.ingest.probe.run_command", fake_runner)
+    monkeypatch.setattr("vaaniscript.ingest.normalize.run_command", fake_runner)
+
+    translator = FakeTranslator()
+    result = VaaniPipeline(
+        Settings(app={"workspace_dir": str(tmp_path / "work")}),
+        asr_engine=FakeAsrEngine(
+            output=AsrOutput(
+                detected_language="hi",
+                segments=[
+                    SegmentResult(
+                        start=0.0,
+                        end=1.0,
+                        detected_lang="hi",
+                        original_text="hello office meeting",
+                        english_text="",
+                        confidence=0.8,
+                        flags=[],
+                    )
+                ],
+            )
+        ),
+        translator=translator,
+    ).transcribe(source)
+
+    assert translator.calls == []
+    assert result.voice_note is not None
+    assert result.voice_note.segments[0].detected_lang == "unknown"
+    assert result.voice_note.segments[0].flags == [
+        "lang_unknown",
+        "no_indic_script",
+        "translation_skipped_unsupported_language",
+    ]

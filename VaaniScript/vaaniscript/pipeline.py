@@ -4,13 +4,20 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
-from .asr import AsrEngine, AsrOutput, NoOpAsrEngine
+from .asr import AsrEngine, AsrOutput, AsrSegmentQuality, NoOpAsrEngine
 from .audio import AudioChunk, DenoiseProcessor, NoOpDenoiseProcessor, NoOpVadProcessor, VadProcessor
 from .config import Settings
 from .contracts import PipelineStageResult, SegmentResult, TranscriptionRequest, VoiceNoteResult
-from .errors import DURATION_LIMIT_EXCEEDED, VaaniScriptError
+from .errors import DURATION_LIMIT_EXCEEDED, NO_SPEECH_DETECTED, VaaniScriptError
+from .flags import (
+    FLAG_LANG_AMBIGUOUS,
+    FLAG_LANG_DERIVED_FROM_SCRIPT,
+    FLAG_LANG_UNKNOWN,
+    FLAG_TRANSLATION_SKIPPED_UNSUPPORTED_LANGUAGE,
+)
 from .ingest import normalize_audio, probe_audio
 from .lang import detect_script_language
+from .quality import apply_asr_guards, merge_flags
 from .translate import NoOpTranslator, Translator
 
 
@@ -97,7 +104,16 @@ class VaaniPipeline:
             )
 
         asr_output = self._transcribe_chunks(denoised_chunks)
-        voice_note.segments = self._translate_segments(asr_output.segments)
+        guard_evaluation = apply_asr_guards(asr_output)
+        if guard_evaluation.no_speech_detected:
+            return self._build_no_speech_result(
+                ingest_result=ingest_result,
+                voice_note=voice_note,
+                chunk_count=len(speech_chunks),
+                denoised_chunk_count=len(denoised_chunks),
+            )
+
+        voice_note.segments = self._translate_segments(guard_evaluation.segments)
         voice_note.full_original_text = self._merge_original_text(voice_note.segments)
         voice_note.full_english_text = self._merge_english_text(voice_note.segments)
 
@@ -182,14 +198,14 @@ class VaaniPipeline:
             message=(
                 "Input validated, probed, normalized, and preprocessed, but no speech chunks were detected."
             ),
-            code="no_speech_detected",
+            code=NO_SPEECH_DETECTED,
             details={
                 **ingest_result.details,
                 "audio": {
                     "chunk_count": chunk_count,
                     "denoised_chunk_count": denoised_chunk_count,
                     "speech_detected": False,
-                    "flags": ["no_speech_detected"],
+                    "flags": [NO_SPEECH_DETECTED],
                 },
                 "asr": {
                     "detected_language": None,
@@ -202,6 +218,7 @@ class VaaniPipeline:
 
     def _transcribe_chunks(self, chunks: list[AudioChunk]) -> AsrOutput:
         merged_segments: list[SegmentResult] = []
+        merged_qualities: list[AsrSegmentQuality] = []
         detected_language: str | None = None
 
         for chunk in chunks:
@@ -209,8 +226,13 @@ class VaaniPipeline:
             if detected_language is None and chunk_output.detected_language is not None:
                 detected_language = chunk_output.detected_language
             merged_segments.extend(self._offset_segments(chunk_output.segments, chunk.start_sec))
+            merged_qualities.extend(chunk_output.segment_qualities)
 
-        return AsrOutput(segments=merged_segments, detected_language=detected_language)
+        return AsrOutput(
+            segments=merged_segments,
+            detected_language=detected_language,
+            segment_qualities=merged_qualities,
+        )
 
     @staticmethod
     def _offset_segments(segments: list[SegmentResult], offset_seconds: float) -> list[SegmentResult]:
@@ -233,7 +255,7 @@ class VaaniPipeline:
 
     def _translate_segment(self, segment: SegmentResult) -> SegmentResult:
         resolved_lang, lang_flags = self._resolve_segment_language(segment)
-        translated = replace(segment, detected_lang=resolved_lang, flags=self._merge_flags(segment.flags, lang_flags))
+        translated = replace(segment, detected_lang=resolved_lang, flags=merge_flags(segment.flags, lang_flags))
 
         if not segment.original_text:
             return translated
@@ -242,9 +264,9 @@ class VaaniPipeline:
             return replace(
                 translated,
                 english_text="",
-                flags=self._merge_flags(
+                flags=merge_flags(
                     translated.flags,
-                    ["translation_skipped_unsupported_language"],
+                    [FLAG_TRANSLATION_SKIPPED_UNSUPPORTED_LANGUAGE],
                 ),
             )
 
@@ -256,31 +278,29 @@ class VaaniPipeline:
         return replace(
             translated,
             english_text=output.english_text,
-            flags=self._merge_flags(translated.flags, output.flags),
+            flags=merge_flags(translated.flags, output.flags),
         )
 
     @staticmethod
     def _resolve_segment_language(segment: SegmentResult) -> tuple[str, list[str]]:
         normalized_lang = segment.detected_lang.strip().lower() if segment.detected_lang else ""
-        if normalized_lang in {"hi", "bn"}:
-            return normalized_lang, []
-
         detection = detect_script_language(segment.original_text)
+        if normalized_lang in {"hi", "bn"}:
+            if detection.detected_lang in {"hi", "bn"}:
+                if detection.detected_lang != normalized_lang:
+                    return normalized_lang, [FLAG_LANG_AMBIGUOUS]
+                return normalized_lang, []
+            if detection.detected_lang == "ambiguous":
+                return normalized_lang, detection.flags or [FLAG_LANG_AMBIGUOUS]
+            return "unknown", [FLAG_LANG_UNKNOWN, *detection.flags]
+
         if detection.detected_lang in {"hi", "bn"}:
-            return detection.detected_lang, ["lang_derived_from_script"]
+            return detection.detected_lang, [FLAG_LANG_DERIVED_FROM_SCRIPT]
 
         if detection.detected_lang == "ambiguous":
-            return "ambiguous", detection.flags or ["lang_ambiguous"]
+            return "ambiguous", detection.flags or [FLAG_LANG_AMBIGUOUS]
 
-        return "unknown", ["lang_unknown", *detection.flags]
-
-    @staticmethod
-    def _merge_flags(existing: list[str], new_flags: list[str]) -> list[str]:
-        merged: list[str] = []
-        for flag in [*existing, *new_flags]:
-            if flag and flag not in merged:
-                merged.append(flag)
-        return merged
+        return "unknown", [FLAG_LANG_UNKNOWN, *detection.flags]
 
 
 class IngestStage:

@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ..flags import FLAG_LANG_AMBIGUOUS, FLAG_NO_INDIC_SCRIPT
+
 DetectedLang = Literal["hi", "bn", "ambiguous", "unknown"]
 
 DEVANAGARI_START = 0x0900
@@ -46,7 +48,7 @@ def detect_script_language(text: str) -> ScriptDetectionResult:
             bengali_count=bengali_count,
             other_letter_count=other_letter_count,
             confidence=0.0,
-            flags=["no_indic_script"],
+            flags=[FLAG_NO_INDIC_SCRIPT],
         )
 
     if devanagari_count == 0:
@@ -99,5 +101,5 @@ def detect_script_language(text: str) -> ScriptDetectionResult:
         bengali_count=bengali_count,
         other_letter_count=other_letter_count,
         confidence=round(dominant_ratio, 4),
-        flags=["lang_ambiguous"],
+        flags=[FLAG_LANG_AMBIGUOUS],
     )

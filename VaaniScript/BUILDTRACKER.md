@@ -8,7 +8,7 @@
 | S3 Pipeline contracts | Done | ccb6dde | 29 passed | Stable DTOs and deterministic JSON result shape |
 | S4 ASR adapter | Done | 23470f9 | 33 passed | Mockable ASR boundary with lazy faster-whisper adapter |
 | S5 Translation adapter | Done | <commit-hash> | 41 passed | Mockable IndicTrans2 boundary with hi/bn routing |
-| S6 Audio preprocessing | Next |  |  | VAD and denoise boundaries before ASR |
-| S7 Storage/export | Not started |  |  |  |
+| S6 Audio preprocessing | Done | <commit-hash> | 43 passed | VAD/denoise boundaries, chunk-wise ASR, structured no-speech path |
+| S7 Robustness guards | Next |  |  | Confidence flags, hallucination guard, duration cap, error consistency |
 | S8 Batch/watch | Not started |  |  |  |
 | S9 Packaging | Not started |  |  |  |

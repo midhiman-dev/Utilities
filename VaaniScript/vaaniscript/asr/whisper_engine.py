@@ -16,6 +16,13 @@ LANGUAGE_SCOPE = {"hi", "bn"}
 class AsrOutput:
     segments: list[SegmentResult] = field(default_factory=list)
     detected_language: str | None = None
+    segment_qualities: list["AsrSegmentQuality"] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class AsrSegmentQuality:
+    avg_logprob: float | None = None
+    no_speech_prob: float | None = None
 
 
 class AsrEngine(Protocol):
@@ -63,7 +70,12 @@ class FasterWhisperEngine:
         mapped_segments = [
             self._map_segment(segment, default_language=scoped_language) for segment in segments
         ]
-        return AsrOutput(segments=mapped_segments, detected_language=scoped_language)
+        segment_qualities = [self._map_segment_quality(segment) for segment in segments]
+        return AsrOutput(
+            segments=mapped_segments,
+            detected_language=scoped_language,
+            segment_qualities=segment_qualities,
+        )
 
     def _get_model(self) -> Any:
         if self._model is not None:
@@ -87,6 +99,15 @@ class FasterWhisperEngine:
             english_text="",
             confidence=confidence,
             flags=[],
+        )
+
+    @staticmethod
+    def _map_segment_quality(segment: Any) -> AsrSegmentQuality:
+        avg_logprob = getattr(segment, "avg_logprob", None)
+        no_speech_prob = getattr(segment, "no_speech_prob", None)
+        return AsrSegmentQuality(
+            avg_logprob=float(avg_logprob) if avg_logprob is not None else None,
+            no_speech_prob=float(no_speech_prob) if no_speech_prob is not None else None,
         )
 
 
