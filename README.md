@@ -82,6 +82,25 @@ redact-secrets application.log
 
 The project also includes a reproducible PyInstaller build script for a standalone Windows executable.
 
+### Secure LLM Harness
+
+Location: [`SecureLLMHarness`](./SecureLLMHarness/)
+
+`SecureLLMHarness` is a cross-platform .NET 8 CLI for validating OpenAI-compatible chat-completion endpoints across OpenAI, Azure OpenAI, OpenRouter, Groq, and local services. It supports single tests and CSV batches, validates a deterministic JSON response, reports latency and sanitized failures, and handles Ctrl+C cancellation.
+
+Documentation: [`SecureLLMHarness/README.md`](./SecureLLMHarness/README.md)
+
+Quick usage:
+
+```bash
+cd SecureLLMHarness
+dotnet restore
+dotnet run -- --provider OpenAI --url https://api.openai.com/v1 --model gpt-4o-mini --api-key-env OPENAI_API_KEY
+dotnet run -- --csv sample-tests.csv --timeout 45 --verbose
+```
+
+API keys are never written to logs, exception messages, result files, or the repository. For Azure OpenAI, use the configured deployment name in the CSV's `Model` column; embedding deployments require a separate embeddings request.
+
 ### VaaniScript
 
 Location: [`VaaniScript`](./VaaniScript/)
@@ -123,5 +142,6 @@ python WhatsAppPhoneMask/src/gui.py
 - `Redact_Secrets` - Text-file secret detection and redaction CLI
 - `VaaniScript` - Local-first Bengali/Hindi voice-note processing CLI foundation
 - `WhatsAppPhoneMask` - WhatsApp phone-number masking GUI and CLI
+- `SecureLLMHarness` - Secure .NET 8 LLM chat-completion testing harness
 
 More utilities can be added here over time, with each one documented in its own folder.

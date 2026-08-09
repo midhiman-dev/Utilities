@@ -1,0 +1,6 @@
+Provider,Url,ApiKey,Model
+OpenAI,https://api.openai.com/v1,REPLACE_WITH_REAL_KEY,gpt-4o-mini
+Groq,https://api.groq.com/openai/v1,REPLACE_WITH_REAL_KEY,llama-3.1-70b-versatile
+OpenRouter,https://openrouter.ai/api/v1,REPLACE_WITH_REAL_KEY,openai/gpt-4o-mini
+Local,http://localhost:11434/v1,,llama3.1
+Azure OpenAI,https://YOUR_RESOURCE.openai.azure.com,REPLACE_WITH_REAL_KEY,YOUR_DEPLOYMENT_NAME
