@@ -65,6 +65,54 @@ Files:
 - [`md-viewer.html`](./HTMLbased-utilites/md-viewer.html) - Markdown file viewer with rendered preview and table of contents
 - [`mermaid-viewer.html`](./HTMLbased-utilites/mermaid-viewer.html) - Mermaid diagram editor with live preview and PNG export
 
+### Redact Secrets
+
+Location: [`Redact_Secrets`](./Redact_Secrets/)
+
+A dependency-free Python CLI that finds and masks sensitive values in UTF-8 text files before they are shared. It detects common cloud and LLM-provider keys, JWTs, bearer tokens, basic-auth URL credentials, private-key blocks, and generic secret assignments. An optional entropy pass can detect unlabelled opaque tokens.
+
+Documentation: [`Redact_Secrets/README.md`](./Redact_Secrets/README.md)
+
+Quick usage:
+
+```bash
+pip install -r Redact_Secrets/requirements.txt
+redact-secrets application.log
+```
+
+The project also includes a reproducible PyInstaller build script for a standalone Windows executable.
+
+### VaaniScript
+
+Location: [`VaaniScript`](./VaaniScript/)
+
+A local-first Python CLI foundation for Bengali and Hindi voice-note processing. It validates and normalises supported audio files, provides VAD, denoising, ASR, and translation adapter boundaries, and returns a stable JSON result contract. Version 0.1 is a scaffold: `version` is fully implemented, while real ASR/translation integrations and batch/watch workflows remain future work.
+
+Documentation: [`VaaniScript/README.md`](./VaaniScript/README.md)
+
+Quick usage:
+
+```bash
+cd VaaniScript
+py -3.13 -m pip install -e .[dev]
+vaaniscript version
+```
+
+### WhatsApp PII Masker
+
+Location: [`WhatsAppPhoneMask`](./WhatsAppPhoneMask/)
+
+A Windows GUI and CLI utility that masks phone numbers in WhatsApp chat exports. It preserves surrounding formatting, whitespace, brackets, and emojis while replacing digits with `X`. It supports file, standard-input, and single-text workflows, configurable digit ranges, a loose matching mode, PyInstaller builds, and a GitHub Actions build workflow.
+
+Documentation: [`WhatsAppPhoneMask/README.md`](./WhatsAppPhoneMask/README.md)
+
+Quick usage:
+
+```bash
+python WhatsAppPhoneMask/src/cli.py chat.txt
+python WhatsAppPhoneMask/src/gui.py
+```
+
 ## Structure
 
 - `mermaidtopng` - Mermaid diagram image converter
@@ -72,5 +120,8 @@ Files:
 - `XL2CSV` - Excel workbook to per-sheet CSV converter
 - `downloadstudymaterial` - Google Drive study materials browser and ZIP downloader
 - `HTMLbased-utilites` - Standalone HTML browser utilities
+- `Redact_Secrets` - Text-file secret detection and redaction CLI
+- `VaaniScript` - Local-first Bengali/Hindi voice-note processing CLI foundation
+- `WhatsAppPhoneMask` - WhatsApp phone-number masking GUI and CLI
 
 More utilities can be added here over time, with each one documented in its own folder.
