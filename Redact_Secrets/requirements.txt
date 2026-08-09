@@ -1,0 +1,3 @@
+# The project has no runtime third-party dependencies.
+# Installs the local package and exposes the `redact-secrets` command.
+-e .
