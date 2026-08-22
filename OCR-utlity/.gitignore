@@ -1,0 +1,16 @@
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-tmp/
+*.egg-info/
+
+# Packaging and PyInstaller outputs
+build/
+dist/
+*.spec
+
+# Local OCR output
+*.txt
+!README.md

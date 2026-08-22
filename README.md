@@ -82,6 +82,23 @@ redact-secrets application.log
 
 The project also includes a reproducible PyInstaller build script for a standalone Windows executable.
 
+### Local OCR CLI
+
+Location: [`OCR-utlity`](./OCR-utlity/)
+
+An offline image-to-text command-line utility powered by Tesseract OCR. It processes individual images or folders, supports combined or per-image UTF-8 text output, multiple installed languages, and a configurable Tesseract executable path. The repository includes tests and a PyInstaller build script for a Windows executable.
+
+Documentation: [`OCR-utlity/README.md`](./OCR-utlity/README.md)
+
+Quick usage:
+
+```powershell
+.\OCR-utlity\dist\ocr-utility.exe .\image.png
+.\OCR-utlity\dist\ocr-utility.exe .\scans --combine --output .\scans.txt
+```
+
+Tesseract OCR must be installed separately, or its executable path can be supplied with `--tesseract-cmd`.
+
 ### Secure LLM Harness
 
 Location: [`SecureLLMHarness`](./SecureLLMHarness/)
@@ -140,6 +157,7 @@ python WhatsAppPhoneMask/src/gui.py
 - `downloadstudymaterial` - Google Drive study materials browser and ZIP downloader
 - `HTMLbased-utilites` - Standalone HTML browser utilities
 - `Redact_Secrets` - Text-file secret detection and redaction CLI
+- `OCR-utlity` - Offline image OCR command-line utility
 - `VaaniScript` - Local-first Bengali/Hindi voice-note processing CLI foundation
 - `WhatsAppPhoneMask` - WhatsApp phone-number masking GUI and CLI
 - `SecureLLMHarness` - Secure .NET 8 LLM chat-completion testing harness
